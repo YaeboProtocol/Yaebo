@@ -4,7 +4,7 @@ import { Badge } from "../ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { Progress } from "../ui/progress";
 import { formatCurrency, formatRemainingTime } from "../../lib/utils";
-import { Calendar, Clock, DollarSign, Wallet } from "lucide-react";
+import { Calendar, Clock, DollarSign, Wallet, TrendingUp, BarChart } from "lucide-react";
 import Link from "next/link";
 import { Button } from "../ui/button";
 
@@ -56,77 +56,86 @@ export default function ProposalCard({ proposal }: ProposalCardProps) {
     }
   };
 
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "voting":
+        return <Clock className="h-3.5 w-3.5 mr-1.5" />;
+      case "marketplace":
+        return <BarChart className="h-3.5 w-3.5 mr-1.5" />;
+      case "closed":
+        return <TrendingUp className="h-3.5 w-3.5 mr-1.5" />;
+      default:
+        return null;
+    }
+  };
+
   const fundingProgress = totalLots > 0 ? Math.round((soldLots / totalLots) * 100) : 0;
 
   return (
     <Card className="h-full flex flex-col hover:shadow-md transition-shadow">
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
-          <CardTitle className="text-xl font-semibold line-clamp-1">{title}</CardTitle>
-          <Badge className={`ml-2 ${getStatusColor(status)}`}>
-            {status.charAt(0).toUpperCase() + status.slice(1)}
+          <CardTitle className="text-lg font-semibold line-clamp-1">{title}</CardTitle>
+          <Badge variant="secondary" className={`flex items-center ${getStatusColor(status)}`}>
+            {getStatusIcon(status)}
+            {status === "marketplace" ? "Market" : status.charAt(0).toUpperCase() + status.slice(1)}
           </Badge>
         </div>
-        <CardDescription className="line-clamp-2">{summary}</CardDescription>
+        <CardDescription className="line-clamp-2 mt-1">{summary}</CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow">
-        <div className="grid grid-cols-2 gap-4 mb-4">
+      
+      <CardContent className="flex-grow pb-2 space-y-4">
+        <div className="flex justify-between items-center">
           <div>
-            <p className="text-sm text-muted-foreground">Funding</p>
+            <p className="text-xs text-muted-foreground mb-0.5">Funding Amount</p>
             <div className="flex items-center gap-1 font-medium">
               <DollarSign className="h-4 w-4 text-primary" />
               {formatCurrency(fundingAmount)}
             </div>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Profit Share</p>
+            <p className="text-xs text-muted-foreground mb-0.5">Profit Share</p>
             <div className="flex items-center gap-1 font-medium">
               <Wallet className="h-4 w-4 text-primary" />
               {profitShare}%
             </div>
           </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Lot Size</p>
-            <p className="font-medium">{formatCurrency(lotSize)}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Max Per Investor</p>
-            <p className="font-medium">{maxPerInvestor} lots</p>
-          </div>
         </div>
 
         {status === "voting" && (
-          <div className="mt-4">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-sm text-muted-foreground">Voting ends</span>
-              <span className="text-sm font-medium flex items-center">
-                <Clock className="h-3 w-3 mr-1" />
-                {formatRemainingTime(votingEndsAt)}
-              </span>
+          <div className="mt-auto">
+            <div className="flex items-center gap-1 bg-blue-50 text-blue-800 px-2 py-1.5 rounded-md text-sm">
+              <Clock className="h-4 w-4" />
+              <span>Voting ends: {formatRemainingTime(votingEndsAt)}</span>
             </div>
           </div>
         )}
 
         {status === "marketplace" && (
-          <div className="mt-4">
+          <div>
             <div className="flex items-center justify-between mb-1">
-              <span className="text-sm text-muted-foreground">Funding progress</span>
-              <span className="text-sm font-medium">{fundingProgress}%</span>
+              <span className="text-xs text-muted-foreground">Funding progress</span>
+              <span className="text-xs font-medium">{fundingProgress}%</span>
             </div>
-            <Progress value={fundingProgress} className="h-2" />
-            <p className="text-sm text-muted-foreground mt-1">
+            <Progress value={fundingProgress} className="h-1.5" />
+            <p className="text-xs text-muted-foreground mt-1">
               {soldLots} of {totalLots} lots sold
             </p>
           </div>
         )}
       </CardContent>
-      <CardFooter className="pt-2 flex items-center justify-between">
-        <div className="flex items-center text-sm text-muted-foreground">
+      
+      <CardFooter className="pt-3 border-t flex items-center justify-between">
+        <div className="flex items-center text-xs text-muted-foreground">
           <Calendar className="h-3 w-3 mr-1" />
-          {new Date(createdAt).toLocaleDateString()}
+          {new Date(createdAt).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          })}
         </div>
         <Link href={`/dao/proposals/${id}`}>
-          <Button variant="outline" size="sm">
+          <Button variant="ghost" size="sm" className="gap-1 text-primary">
             View Details
           </Button>
         </Link>

@@ -1,18 +1,39 @@
 "use client";
 
 import { useState } from "react";
-import { 
-  ManufacturerApplication, 
+import {
+  ManufacturerApplication,
   ApplicationStatus,
   Document as AppDocument,
-  Comment 
+  Comment,
 } from "@/types";
-import { addComment, updateApplication } from "@/lib/mock-service";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  addComment,
+  updateApplication,
+  addResearchPaper,
+} from "@/lib/mock-service";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { FileText, RefreshCw, CheckCircle2, XCircle, AlertCircle, Clock, Send, Paperclip, Download, Upload } from "lucide-react";
+import {
+  FileText,
+  RefreshCw,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Clock,
+  Send,
+  Paperclip,
+  Download,
+  Upload,
+} from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -36,44 +57,50 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
+import { useRegisteredContract } from "@soroban-react/contracts";
+import { nativeToScVal } from "@stellar/stellar-sdk";
 
-const STATUS_BADGES: Record<ApplicationStatus, { label: string, color: string, icon: React.ReactNode, bgColor: string }> = {
-  "Draft": {
+
+const STATUS_BADGES: Record<
+  ApplicationStatus,
+  { label: string; color: string; icon: React.ReactNode; bgColor: string }
+> = {
+  Draft: {
     label: "Draft",
     color: "text-slate-800",
     bgColor: "bg-slate-100",
-    icon: <FileText className="w-4 h-4" />
+    icon: <FileText className="w-4 h-4" />,
   },
-  "Submitted": {
+  Submitted: {
     label: "Submitted",
     color: "text-blue-800",
     bgColor: "bg-blue-100",
-    icon: <Clock className="w-4 h-4" />
+    icon: <Clock className="w-4 h-4" />,
   },
   "Under Review": {
     label: "Under Review",
     color: "text-purple-800",
     bgColor: "bg-purple-100",
-    icon: <RefreshCw className="w-4 h-4" />
+    icon: <RefreshCw className="w-4 h-4" />,
   },
   "Needs More Info": {
     label: "Needs More Info",
     color: "text-amber-800",
     bgColor: "bg-amber-100",
-    icon: <AlertCircle className="w-4 h-4" />
+    icon: <AlertCircle className="w-4 h-4" />,
   },
-  "Accepted": {
+  Accepted: {
     label: "Accepted",
     color: "text-green-800",
     bgColor: "bg-green-100",
-    icon: <CheckCircle2 className="w-4 h-4" />
+    icon: <CheckCircle2 className="w-4 h-4" />,
   },
-  "Rejected": {
+  Rejected: {
     label: "Rejected",
     color: "text-red-800",
     bgColor: "bg-red-100",
-    icon: <XCircle className="w-4 h-4" />
-  }
+    icon: <XCircle className="w-4 h-4" />,
+  },
 };
 
 interface ApplicationDetailProps {
@@ -82,31 +109,106 @@ interface ApplicationDetailProps {
   onCreateProposal: () => void;
 }
 
-export function ApplicationDetail({ application, onStatusChange, onCreateProposal }: ApplicationDetailProps) {
+interface StatusChangeData {
+  status: ApplicationStatus;
+  reason?: string;
+  researchPaper?: File | null;
+}
+
+export function ApplicationDetail({
+  application,
+  onStatusChange,
+  onCreateProposal,
+}: ApplicationDetailProps) {
   const [commentText, setCommentText] = useState("");
   const [statusChangeDialogOpen, setStatusChangeDialogOpen] = useState(false);
-  const [newStatus, setNewStatus] = useState<ApplicationStatus>(application.status);
+  const [selectedStatus, setSelectedStatus] =
+    useState<ApplicationStatus | null>(null);
   const [statusReason, setStatusReason] = useState("");
+  const [researchPaper, setResearchPaper] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
 
+  const contract = useRegisteredContract("std");
+
   const handleStatusChange = async () => {
+    if (!selectedStatus) return;
+
     setSubmitting(true);
     try {
-      await updateApplication(application.id, { status: newStatus });
-      
+      await updateApplication(application.id, { status: selectedStatus });
+
       // Add a comment with the status change reason if provided
       if (statusReason.trim()) {
         await addComment(
-          application.id, 
-          `Status changed to ${newStatus}. ${statusReason}`, 
-          [], 
+          application.id,
+          `Status changed to ${selectedStatus}. ${statusReason}`,
+          [],
           "Diligence"
         );
       }
-      
-      onStatusChange(newStatus);
+
+      // Upload research paper if provided for Accepted status
+      if (selectedStatus === "Accepted" && researchPaper) {
+        await addResearchPaper(application.id, researchPaper);
+
+        // Attempt contract invocation but don't block status change if it fails
+        try {
+          if (!contract) {
+            console.warn("Contract is not available - skipping proposal creation");
+          } else {
+            // Only try contract invocation if we have a contract
+            try {
+              const smeDetailsString =application.smeInfo;
+              
+              // Local blob URLs can't be accessed by the contract
+              // In a production environment, we would upload the file to IPFS or similar
+              // and use a publicly accessible URL
+              let researchPaperUrl = "";
+              if (application.research && application.research.researchPaper && application.research.researchPaper.url) {
+                researchPaperUrl = application.research.researchPaper.url;
+                console.log("Note: Using blob URL which may not be accessible to contract:", researchPaperUrl);
+              }
+              
+              console.log("Attempting contract invocation (may fail in development)...");
+              
+              const result = await contract.invoke({
+                method: "create_proposal",
+                args: [
+                  nativeToScVal("GALEHJJOMYUJGHUE3WWECVKUKVS6IO5VI67FUQJNA4KCYUTVBOAQG5V2", { type: "address" }),
+                    nativeToScVal(smeDetailsString, { type: "string"  }),
+                    nativeToScVal("https://papers.co/research123", { type: "string" }),
+                  nativeToScVal(BigInt(1000000), { type: "u128" }),
+                  nativeToScVal(BigInt(10000), { type: "u128" }),
+                  nativeToScVal(BigInt(100), { type: "u32" }),
+                  nativeToScVal(BigInt(5), { type: "u32" }),
+                  nativeToScVal(BigInt(90), { type: "u32" }),
+                  nativeToScVal(BigInt(15), { type: "u32" }),
+                  nativeToScVal(BigInt(25), { type: "u32" }),
+                ],
+                signAndSend: true,
+              });
+              
+              console.log("Proposal created:", result);
+            } catch (innerError) {
+              console.error("Contract error:", innerError);
+              console.log("Status change successful but proposal creation failed. This may be due to:");
+              console.log("1. Using a local blob URL that the contract can't access");
+              console.log("2. Contract implementation issues");
+              console.log("3. Network configuration issues");
+              console.log("Status will be updated but no proposal will be created on-chain");
+            }
+          }
+        } catch (error) {
+          console.error("Error during proposal creation attempt:", error);
+        }
+      }
+
+      onStatusChange(selectedStatus);
       setStatusChangeDialogOpen(false);
+      setSelectedStatus(null);
+      setStatusReason("");
+      setResearchPaper(null);
     } catch (error) {
       console.error("Failed to update status:", error);
     } finally {
@@ -114,9 +216,14 @@ export function ApplicationDetail({ application, onStatusChange, onCreateProposa
     }
   };
 
+  const openStatusChangeDialog = (status: ApplicationStatus) => {
+    setSelectedStatus(status);
+    setStatusChangeDialogOpen(true);
+  };
+
   const handleSubmitComment = async () => {
     if (!commentText.trim()) return;
-    
+
     setSubmittingComment(true);
     try {
       await addComment(application.id, commentText, [], "Diligence");
@@ -131,21 +238,28 @@ export function ApplicationDetail({ application, onStatusChange, onCreateProposa
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
-  const DocumentLink = ({ document }: { document: AppDocument | null | undefined }) => {
-    if (!document) return <span className="text-muted-foreground text-sm">Not provided</span>;
-    
+  const DocumentLink = ({
+    document,
+  }: {
+    document: AppDocument | null | undefined;
+  }) => {
+    if (!document)
+      return (
+        <span className="text-muted-foreground text-sm">Not provided</span>
+      );
+
     return (
-      <a 
-        href={document.url} 
-        target="_blank" 
-        rel="noopener noreferrer" 
+      <a
+        href={document.url}
+        target="_blank"
+        rel="noopener noreferrer"
         className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
       >
         <FileText className="h-4 w-4" />
@@ -153,7 +267,11 @@ export function ApplicationDetail({ application, onStatusChange, onCreateProposa
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full"
+              >
                 <Download className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
@@ -173,7 +291,11 @@ export function ApplicationDetail({ application, onStatusChange, onCreateProposa
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle>Application Details</CardTitle>
-              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-medium ${STATUS_BADGES[application.status].bgColor} ${STATUS_BADGES[application.status].color}`}>
+              <div
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-medium ${
+                  STATUS_BADGES[application.status].bgColor
+                } ${STATUS_BADGES[application.status].color}`}
+              >
                 {STATUS_BADGES[application.status].icon}
                 {STATUS_BADGES[application.status].label}
               </div>
@@ -190,58 +312,96 @@ export function ApplicationDetail({ application, onStatusChange, onCreateProposa
                 <TabsTrigger value="investment">Investment</TabsTrigger>
                 <TabsTrigger value="research">Research</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="company" className="space-y-4 pt-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Company Information</h3>
+                      <h3 className="text-sm font-medium text-muted-foreground">
+                        Company Information
+                      </h3>
                       <div className="mt-2 space-y-2">
                         <div>
-                          <div className="text-xs text-muted-foreground">Name</div>
-                          <div className="font-medium">{application.companyInfo.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            Name
+                          </div>
+                          <div className="font-medium">
+                            {application.companyInfo.name}
+                          </div>
                         </div>
                         <div>
-                          <div className="text-xs text-muted-foreground">Stellar Public Key</div>
-                          <div className="font-mono text-sm truncate">{application.companyInfo.stellarPubkey}</div>
+                          <div className="text-xs text-muted-foreground">
+                            Stellar Public Key
+                          </div>
+                          <div className="font-mono text-sm truncate">
+                            {application.companyInfo.stellarPubkey}
+                          </div>
                         </div>
                         <div>
-                          <div className="text-xs text-muted-foreground">Contact</div>
+                          <div className="text-xs text-muted-foreground">
+                            Contact
+                          </div>
                           <div>{application.companyInfo.contact}</div>
                         </div>
                         <div>
-                          <div className="text-xs text-muted-foreground">Website</div>
-                          <a href={application.companyInfo.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                          <div className="text-xs text-muted-foreground">
+                            Website
+                          </div>
+                          <a
+                            href={application.companyInfo.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
                             {application.companyInfo.website}
                           </a>
                         </div>
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">SME Information</h3>
+                      <h3 className="text-sm font-medium text-muted-foreground">
+                        SME Information
+                      </h3>
                       <div className="mt-2 space-y-2">
                         <div>
-                          <div className="text-xs text-muted-foreground">Name</div>
-                          <div className="font-medium">{application.smeInfo.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            Name
+                          </div>
+                          <div className="font-medium">
+                            {application.smeInfo.name}
+                          </div>
                         </div>
                         <div>
-                          <div className="text-xs text-muted-foreground">Registration Number</div>
+                          <div className="text-xs text-muted-foreground">
+                            Registration Number
+                          </div>
                           <div>{application.smeInfo.regNumber}</div>
                         </div>
                         <div>
-                          <div className="text-xs text-muted-foreground">Jurisdiction</div>
+                          <div className="text-xs text-muted-foreground">
+                            Jurisdiction
+                          </div>
                           <div>{application.smeInfo.jurisdiction}</div>
                         </div>
                         <div>
-                          <div className="text-xs text-muted-foreground">Address</div>
+                          <div className="text-xs text-muted-foreground">
+                            Address
+                          </div>
                           <div>{application.smeInfo.address}</div>
                         </div>
                         <div>
-                          <div className="text-xs text-muted-foreground">Website</div>
-                          <a href={application.smeInfo.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                          <div className="text-xs text-muted-foreground">
+                            Website
+                          </div>
+                          <a
+                            href={application.smeInfo.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
                             {application.smeInfo.website}
                           </a>
                         </div>
@@ -250,33 +410,45 @@ export function ApplicationDetail({ application, onStatusChange, onCreateProposa
                   </div>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="documents" className="pt-4">
                 <div className="grid grid-cols-1 gap-6">
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <h3 className="text-sm font-medium">Incorporation Certificate</h3>
+                        <h3 className="text-sm font-medium">
+                          Incorporation Certificate
+                        </h3>
                         <div className="mt-1">
-                          <DocumentLink document={application.documents.incorporationCert} />
+                          <DocumentLink
+                            document={application.documents.incorporationCert}
+                          />
                         </div>
                       </div>
                       <div>
                         <h3 className="text-sm font-medium">Tax Certificate</h3>
                         <div className="mt-1">
-                          <DocumentLink document={application.documents.taxCert} />
+                          <DocumentLink
+                            document={application.documents.taxCert}
+                          />
                         </div>
                       </div>
                       <div>
-                        <h3 className="text-sm font-medium">Audited Financials</h3>
+                        <h3 className="text-sm font-medium">
+                          Audited Financials
+                        </h3>
                         <div className="mt-1">
-                          <DocumentLink document={application.documents.auditedFinancials} />
+                          <DocumentLink
+                            document={application.documents.auditedFinancials}
+                          />
                         </div>
                       </div>
                       <div>
                         <h3 className="text-sm font-medium">Business Plan</h3>
                         <div className="mt-1">
-                          <DocumentLink document={application.documents.businessPlan} />
+                          <DocumentLink
+                            document={application.documents.businessPlan}
+                          />
                         </div>
                       </div>
                       <div>
@@ -288,20 +460,26 @@ export function ApplicationDetail({ application, onStatusChange, onCreateProposa
                       <div>
                         <h3 className="text-sm font-medium">Use of Proceeds</h3>
                         <div className="mt-1">
-                          <DocumentLink document={application.documents.useOfProceeds} />
+                          <DocumentLink
+                            document={application.documents.useOfProceeds}
+                          />
                         </div>
                       </div>
                       <div>
                         <h3 className="text-sm font-medium">Risk Report</h3>
                         <div className="mt-1">
-                          <DocumentLink document={application.documents.riskReport} />
+                          <DocumentLink
+                            document={application.documents.riskReport}
+                          />
                         </div>
                       </div>
                     </div>
-                    
+
                     {application.documents.additionalDocs.length > 0 && (
                       <div className="mt-6">
-                        <h3 className="text-sm font-medium mb-2">Additional Documents</h3>
+                        <h3 className="text-sm font-medium mb-2">
+                          Additional Documents
+                        </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                           {application.documents.additionalDocs.map((doc) => (
                             <div key={doc.id}>
@@ -314,36 +492,61 @@ export function ApplicationDetail({ application, onStatusChange, onCreateProposa
                   </div>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="investment" className="pt-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Investment Terms</h3>
+                      <h3 className="text-sm font-medium text-muted-foreground">
+                        Investment Terms
+                      </h3>
                       <div className="mt-2 space-y-2">
                         <div>
-                          <div className="text-xs text-muted-foreground">Funding Amount</div>
-                          <div className="font-medium">${application.investmentTerms.totalFundingAmount.toLocaleString()}</div>
+                          <div className="text-xs text-muted-foreground">
+                            Funding Amount
+                          </div>
+                          <div className="font-medium">
+                            $
+                            {application.investmentTerms.totalFundingAmount.toLocaleString()}
+                          </div>
                         </div>
                         <div>
-                          <div className="text-xs text-muted-foreground">Investor Share</div>
-                          <div className="font-medium">{application.investmentTerms.investorSharePercentage}%</div>
+                          <div className="text-xs text-muted-foreground">
+                            Investor Share
+                          </div>
+                          <div className="font-medium">
+                            {
+                              application.investmentTerms
+                                .investorSharePercentage
+                            }
+                            %
+                          </div>
                         </div>
                         <div>
-                          <div className="text-xs text-muted-foreground">Expected Returns</div>
-                          <div className="font-medium">{application.investmentTerms.expectedReturn}%</div>
+                          <div className="text-xs text-muted-foreground">
+                            Expected Returns
+                          </div>
+                          <div className="font-medium">
+                            {application.investmentTerms.expectedReturn}%
+                          </div>
                         </div>
                         <div>
-                          <div className="text-xs text-muted-foreground">Minimum Period</div>
-                          <div className="font-medium">{application.investmentTerms.minPeriod} months</div>
+                          <div className="text-xs text-muted-foreground">
+                            Minimum Period
+                          </div>
+                          <div className="font-medium">
+                            {application.investmentTerms.minPeriod} months
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Use of Funds Breakdown</h3>
+                      <h3 className="text-sm font-medium text-muted-foreground">
+                        Use of Funds Breakdown
+                      </h3>
                       <div className="mt-2 whitespace-pre-line">
                         {application.investmentTerms.useOfFundsBreakdown}
                       </div>
@@ -351,59 +554,80 @@ export function ApplicationDetail({ application, onStatusChange, onCreateProposa
                   </div>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="research" className="pt-4">
                 {application.research ? (
                   <div className="grid grid-cols-1 gap-6">
                     <div className="space-y-4">
                       <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Research Summary</h3>
+                        <h3 className="text-sm font-medium text-muted-foreground">
+                          Research Summary
+                        </h3>
                         <div className="mt-2 whitespace-pre-line">
                           {application.research.summary}
                         </div>
                       </div>
-                      
+
                       <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Key Metrics</h3>
+                        <h3 className="text-sm font-medium text-muted-foreground">
+                          Key Metrics
+                        </h3>
                         <div className="mt-2 whitespace-pre-line">
                           {application.research.keyMetrics}
                         </div>
                       </div>
-                      
+
                       <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Risk Score</h3>
+                        <h3 className="text-sm font-medium text-muted-foreground">
+                          Risk Score
+                        </h3>
                         <div className="mt-2">
                           <div className="w-full bg-muted rounded-full h-2.5">
-                            <div 
+                            <div
                               className={`h-2.5 rounded-full ${
-                                application.research.riskScore < 30 ? "bg-green-500" : 
-                                application.research.riskScore < 70 ? "bg-yellow-500" : "bg-red-500"
+                                application.research.riskScore < 30
+                                  ? "bg-green-500"
+                                  : application.research.riskScore < 70
+                                  ? "bg-yellow-500"
+                                  : "bg-red-500"
                               }`}
-                              style={{ width: `${application.research.riskScore}%` }}
+                              style={{
+                                width: `${application.research.riskScore}%`,
+                              }}
                             ></div>
                           </div>
                           <div className="flex justify-between mt-1">
                             <span className="text-xs text-green-500">Low</span>
-                            <span className="text-xs text-yellow-500">Medium</span>
+                            <span className="text-xs text-yellow-500">
+                              Medium
+                            </span>
                             <span className="text-xs text-red-500">High</span>
                           </div>
                         </div>
                       </div>
-                      
+
                       <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Projections</h3>
+                        <h3 className="text-sm font-medium text-muted-foreground">
+                          Projections
+                        </h3>
                         <div className="mt-2 whitespace-pre-line">
                           {application.research.projections}
                         </div>
                       </div>
-                      
+
                       <div>
-                        <h3 className="text-sm font-medium text-muted-foreground">Research Paper</h3>
+                        <h3 className="text-sm font-medium text-muted-foreground">
+                          Research Paper
+                        </h3>
                         <div className="mt-1">
                           {application.research.researchPaper ? (
-                            <DocumentLink document={application.research.researchPaper} />
+                            <DocumentLink
+                              document={application.research.researchPaper}
+                            />
                           ) : (
-                            <span className="text-muted-foreground text-sm">Not provided</span>
+                            <span className="text-muted-foreground text-sm">
+                              Not provided
+                            </span>
                           )}
                         </div>
                       </div>
@@ -416,7 +640,8 @@ export function ApplicationDetail({ application, onStatusChange, onCreateProposa
                     </div>
                     <h3 className="text-lg font-medium">No Research Data</h3>
                     <p className="text-muted-foreground mt-1 max-w-md mx-auto">
-                      Research information will be available after initial review is completed.
+                      Research information will be available after initial
+                      review is completed.
                     </p>
                   </div>
                 )}
@@ -424,7 +649,7 @@ export function ApplicationDetail({ application, onStatusChange, onCreateProposa
             </Tabs>
           </CardContent>
         </Card>
-        
+
         <div className="w-full md:w-1/3 space-y-4">
           <Card>
             <CardHeader className="pb-3">
@@ -432,68 +657,200 @@ export function ApplicationDetail({ application, onStatusChange, onCreateProposa
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <Dialog open={statusChangeDialogOpen} onOpenChange={setStatusChangeDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="w-full justify-start" variant="outline">
+                <Dialog
+                  open={statusChangeDialogOpen}
+                  onOpenChange={setStatusChangeDialogOpen}
+                >
+                  <div className="grid grid-cols-1 gap-2">
+                    <Button
+                      className="w-full"
+                      variant={
+                        application.status === "Under Review"
+                          ? "default"
+                          : "outline"
+                      }
+                      onClick={() => openStatusChangeDialog("Under Review")}
+                    >
                       <RefreshCw className="mr-2 h-4 w-4" />
-                      Change Status
+                      Mark Under Review
                     </Button>
-                  </DialogTrigger>
+
+                    <Button
+                      className="w-full"
+                      variant={
+                        application.status === "Needs More Info"
+                          ? "default"
+                          : "outline"
+                      }
+                      onClick={() => openStatusChangeDialog("Needs More Info")}
+                    >
+                      <AlertCircle className="mr-2 h-4 w-4" />
+                      Request More Info
+                    </Button>
+
+                    <Button
+                      className="w-full"
+                      variant={
+                        application.status === "Accepted"
+                          ? "default"
+                          : "outline"
+                      }
+                      onClick={() => openStatusChangeDialog("Accepted")}
+                    >
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Accept Application
+                    </Button>
+
+                    <Button
+                      className="w-full"
+                      variant={
+                        application.status === "Rejected"
+                          ? "default"
+                          : "outline"
+                      }
+                      onClick={() => openStatusChangeDialog("Rejected")}
+                    >
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Reject Application
+                    </Button>
+                  </div>
+
                   <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
-                      <DialogTitle>Change Application Status</DialogTitle>
+                      <DialogTitle>
+                        {selectedStatus === "Under Review" &&
+                          "Mark as Under Review"}
+                        {selectedStatus === "Needs More Info" &&
+                          "Request More Information"}
+                        {selectedStatus === "Accepted" && "Accept Application"}
+                        {selectedStatus === "Rejected" && "Reject Application"}
+                      </DialogTitle>
                       <DialogDescription>
-                        Update the status of this application. This will notify the manufacturer.
+                        {selectedStatus === "Under Review" &&
+                          "This will notify the manufacturer that their application is being reviewed."}
+                        {selectedStatus === "Needs More Info" &&
+                          "Specify what additional information is needed from the manufacturer."}
+                        {selectedStatus === "Accepted" &&
+                          "This will approve the application and allow proposal creation."}
+                        {selectedStatus === "Rejected" &&
+                          "Please provide a reason for rejecting this application."}
                       </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="status">New Status</Label>
-                        <Select
-                          value={newStatus}
-                          onValueChange={(value: string) => setNewStatus(value as ApplicationStatus)}
-                        >
-                          <SelectTrigger id="status">
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Under Review">Under Review</SelectItem>
-                            <SelectItem value="Needs More Info">Needs More Info</SelectItem>
-                            <SelectItem value="Accepted">Accepted</SelectItem>
-                            <SelectItem value="Rejected">Rejected</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="reason">Reason (optional)</Label>
-                        <Textarea
-                          id="reason"
-                          placeholder="Provide a reason for the status change"
-                          value={statusReason}
-                          onChange={(e) => setStatusReason(e.target.value)}
-                        />
-                      </div>
+                      {selectedStatus === "Accepted" && (
+                        <div className="grid gap-2">
+                          <Label htmlFor="researchPaper">Research Paper</Label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              id="researchPaper"
+                              type="file"
+                              className="hidden"
+                              onChange={(e) =>
+                                setResearchPaper(
+                                  e.target.files ? e.target.files[0] : null
+                                )
+                              }
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="w-full"
+                              onClick={() =>
+                                document
+                                  .getElementById("researchPaper")
+                                  ?.click()
+                              }
+                            >
+                              <Upload className="mr-2 h-4 w-4" />
+                              {researchPaper
+                                ? researchPaper.name
+                                : "Upload Research Paper"}
+                            </Button>
+                          </div>
+                          <Label htmlFor="acceptReason">
+                            Comments (required)
+                          </Label>
+                          <Textarea
+                            id="acceptReason"
+                            placeholder="Provide comments for accepting the application"
+                            value={statusReason}
+                            onChange={(e) => setStatusReason(e.target.value)}
+                            required
+                          />
+                        </div>
+                      )}
+
+                      {selectedStatus === "Rejected" && (
+                        <div className="grid gap-2">
+                          <Label htmlFor="rejectReason">
+                            Reason for Rejection (required)
+                          </Label>
+                          <Textarea
+                            id="rejectReason"
+                            placeholder="Provide a reason for rejecting the application"
+                            value={statusReason}
+                            onChange={(e) => setStatusReason(e.target.value)}
+                            required
+                          />
+                        </div>
+                      )}
+
+                      {selectedStatus === "Needs More Info" && (
+                        <div className="grid gap-2">
+                          <Label htmlFor="moreInfoReason">
+                            What Information is Needed? (required)
+                          </Label>
+                          <Textarea
+                            id="moreInfoReason"
+                            placeholder="Specify what additional information you need from the manufacturer"
+                            value={statusReason}
+                            onChange={(e) => setStatusReason(e.target.value)}
+                            required
+                          />
+                        </div>
+                      )}
+
+                      {selectedStatus === "Under Review" && (
+                        <p className="text-sm text-muted-foreground">
+                          This will update the application status to Under
+                          Review. No additional information is required.
+                        </p>
+                      )}
                     </div>
                     <DialogFooter>
-                      <Button variant="outline" onClick={() => setStatusChangeDialogOpen(false)}>
+                      <Button
+                        variant="outline"
+                        onClick={() => setStatusChangeDialogOpen(false)}
+                      >
                         Cancel
                       </Button>
-                      <Button onClick={handleStatusChange} disabled={submitting}>
+                      <Button
+                        onClick={handleStatusChange}
+                        disabled={
+                          submitting ||
+                          (selectedStatus !== "Under Review" &&
+                            !statusReason.trim()) ||
+                          (selectedStatus === "Accepted" && !researchPaper)
+                        }
+                      >
                         {submitting ? (
                           <>
                             <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
                             Saving...
                           </>
                         ) : (
-                          "Save Changes"
+                          "Update Status"
                         )}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
-                
+
                 {application.status === "Accepted" && (
-                  <Button className="w-full justify-start" onClick={onCreateProposal}>
+                  <Button
+                    className="w-full justify-start"
+                    onClick={onCreateProposal}
+                  >
                     <FileText className="mr-2 h-4 w-4" />
                     Create Proposal
                   </Button>
@@ -501,7 +858,7 @@ export function ApplicationDetail({ application, onStatusChange, onCreateProposa
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium">Comments</CardTitle>
@@ -521,12 +878,16 @@ export function ApplicationDetail({ application, onStatusChange, onCreateProposa
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm">{comment.user.name}</span>
+                            <span className="font-medium text-sm">
+                              {comment.user.name}
+                            </span>
                             <span className="text-xs text-muted-foreground">
                               {formatDate(comment.createdAt)}
                             </span>
                           </div>
-                          <div className="mt-1 text-sm whitespace-pre-line">{comment.content}</div>
+                          <div className="mt-1 text-sm whitespace-pre-line">
+                            {comment.content}
+                          </div>
                           {comment.attachments.length > 0 && (
                             <div className="mt-2 flex flex-wrap gap-2">
                               {comment.attachments.map((attachment) => (
@@ -552,10 +913,12 @@ export function ApplicationDetail({ application, onStatusChange, onCreateProposa
                     <div className="mx-auto w-10 h-10 rounded-full bg-muted flex items-center justify-center mb-2">
                       <Paperclip className="h-5 w-5 text-muted-foreground" />
                     </div>
-                    <p className="text-sm text-muted-foreground">No comments yet</p>
+                    <p className="text-sm text-muted-foreground">
+                      No comments yet
+                    </p>
                   </div>
                 )}
-                
+
                 <div className="pt-3 border-t">
                   <div className="flex gap-2">
                     <Textarea
@@ -566,12 +929,16 @@ export function ApplicationDetail({ application, onStatusChange, onCreateProposa
                     />
                   </div>
                   <div className="flex justify-between mt-2">
-                    <Button variant="outline" size="sm" className="text-muted-foreground">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-muted-foreground"
+                    >
                       <Paperclip className="h-4 w-4 mr-1" />
                       Attach
                     </Button>
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       onClick={handleSubmitComment}
                       disabled={!commentText.trim() || submittingComment}
                     >
@@ -596,4 +963,4 @@ export function ApplicationDetail({ application, onStatusChange, onCreateProposa
       </div>
     </div>
   );
-} 
+}

@@ -9,6 +9,8 @@ import {
 import { getApplication } from "@/lib/mock-service";
 import { ApplicationDetail } from "@/components/diligence/ApplicationDetail";
 import { ProposalCreationForm } from "@/components/diligence/ProposalCreationForm";
+import { useSorobanReact } from "@soroban-react/core";
+import { useRegisteredContract } from "@soroban-react/contracts";
 
 export default function ApplicationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -18,6 +20,10 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
   const [application, setApplication] = useState<ManufacturerApplication | null>(null);
   const [loading, setLoading] = useState(true);
   const [showProposalForm, setShowProposalForm] = useState(false);
+
+  const contract = useRegisteredContract("std");
+
+  console.log("contract in page component:", contract);
 
   useEffect(() => {
     const loadApplication = async () => {

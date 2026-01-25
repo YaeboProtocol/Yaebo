@@ -162,6 +162,38 @@ export const addDocument = async (
   return document;
 };
 
+// Mock add research paper function
+export const addResearchPaper = async (
+  applicationId: string,
+  file: File
+): Promise<Document> => {
+  // Simulate a delay
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  
+  const document = await uploadDocument(file, file.type);
+  
+  const application = applications.find(app => app.id === applicationId);
+  if (!application) {
+    throw new Error(`Application with ID ${applicationId} not found`);
+  }
+  
+  // Create research object if it doesn't exist
+  if (!application.research) {
+    application.research = {
+      researchPaper: null,
+      summary: "Research analysis pending completion",
+      keyMetrics: "Key metrics will be populated after research completion",
+      riskScore: 50,
+      projections: "Projections will be provided after analysis"
+    };
+  }
+  
+  // Update research paper
+  application.research.researchPaper = document;
+  
+  return document;
+};
+
 // Initialize with a mock application for testing
 export const initMockData = () => {
   const mockApplication: ManufacturerApplication = {

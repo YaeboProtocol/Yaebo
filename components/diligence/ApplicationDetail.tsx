@@ -59,7 +59,129 @@ import {
 import { Label } from "@/components/ui/label";
 import { useRegisteredContract } from "@soroban-react/contracts";
 import { nativeToScVal } from "@stellar/stellar-sdk";
+import {
+  BASE_FEE,
+  Contract,
+  Networks,
+  rpc as StellarRpc,
+  Transaction,
+  TransactionBuilder,
+  xdr,
+} from "@stellar/stellar-sdk";
+import React, { useEffect } from "react";
+import {
+  getPublicKey,
+  isConnected,
+  signTransaction,
+} from "@stellar/freighter-api";
+import { useSorobanReact } from "@soroban-react/core";
 
+const CONTRACT_ID = "CAUA5OCRFU7FGPTBBCO6QK2WZ7HHWSDFTUPQ5HOXZXRBEV2VDDOPJJOC";
+const NETWORK_PASSPHRASE = Networks.TESTNET;
+const SOROBAN_URL = "https://soroban-testnet.stellar.org:443";
+
+const handleIncrement = async (publicKey: string) => {
+  try {
+    const server = new StellarRpc.Server(SOROBAN_URL);
+    const account = await server.getAccount(publicKey);
+
+    const contract = new Contract(CONTRACT_ID);
+    // const instance = contract.getFootprint();
+
+    const tx = new TransactionBuilder(account, {
+      fee: BASE_FEE,
+      networkPassphrase: NETWORK_PASSPHRASE,
+    })
+      .addOperation(
+        contract.call(
+          "create_proposal",                                                                                   
+
+          nativeToScVal(
+            "GALEHJJOMYUJGHUE3WWECVKUKVS6IO5VI67FUQJNA4KCYUTVBOAQG5V2",
+            { type: "address" }
+          ),
+          nativeToScVal(
+            '{"name":"SME Example Ltd.","reg_num":"REG-987","jurisdiction":"Exampleland","address":"456 Oak Ave","website":"http://sme.example"}',
+            { type: "string" }
+          ),
+          nativeToScVal("https://papers.co/research123", { type: "string" }),
+          nativeToScVal(1000000, { type: "u128" }),
+          nativeToScVal(10000, { type: "u128" }),
+          nativeToScVal(100, { type: "u32" }),
+          nativeToScVal(5, { type: "u32" }),
+          nativeToScVal(90, { type: "u32" }),
+          nativeToScVal(15, { type: "u32" }),
+          nativeToScVal(25, { type: "u32" })
+        )
+      )
+      .setTimeout(30)
+      .build();
+
+    // const result = await contract.invoke({
+    //   method: "create_proposal",
+    //   args: [
+    //     nativeToScVal("GALEHJJOMYUJGHUE3WWECVKUKVS6IO5VI67FUQJNA4KCYUTVBOAQG5V2", { type: "address" }),
+    //       nativeToScVal(smeDetailsString, { type: "string"  }),
+    //       nativeToScVal("https://papers.co/research123", { type: "string" }),
+    //     nativeToScVal(BigInt(1000000), { type: "u128" }),
+    //     nativeToScVal(BigInt(10000), { type: "u128" }),
+    //     nativeToScVal(BigInt(100), { type: "u32" }),
+    //     nativeToScVal(BigInt(5), { type: "u32" }),
+    //     nativeToScVal(BigInt(90), { type: "u32" }),
+    //     nativeToScVal(BigInt(15), { type: "u32" }),
+    //     nativeToScVal(BigInt(25), { type: "u32" }),
+    //   ],
+    //   signAndSend: true,
+    // });
+
+    const preparedTx = await server.prepareTransaction(tx);
+
+    const signedXdr = await signTransaction(
+      preparedTx.toEnvelope().toXDR("base64"),
+      {
+        networkPassphrase: NETWORK_PASSPHRASE,
+      }
+    );
+
+    const signedTx = TransactionBuilder.fromXDR(
+      signedXdr,
+      NETWORK_PASSPHRASE
+    ) as Transaction;
+
+    const txResult = await server.sendTransaction(signedTx);
+
+    if (txResult.status !== "PENDING") {
+      throw new Error("Something went Wrong");
+    }
+    const hash = txResult.hash;
+    let getResponse = await server.getTransaction(hash);
+    // Poll `getTransaction` until the status is not "NOT_FOUND"
+
+    while (getResponse.status === "NOT_FOUND") {
+      console.log("Waiting for transaction confirmation...");
+      getResponse = await server.getTransaction(hash);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+
+    if (getResponse.status === "SUCCESS") {
+      // Make sure the transaction's resultMetaXDR is not empty
+      if (!getResponse.resultMetaXdr) {
+        throw "Empty resultMetaXDR in getTransaction response";
+      }
+    } else {
+      throw `Transaction failed: ${getResponse.resultXdr}`;
+    }
+
+    // Extract the new count from the transaction result
+    const returnValue = getResponse.resultMetaXdr
+      .v3()
+      .sorobanMeta()
+      ?.returnValue();
+  } catch (error) {
+    console.error("Error incrementing counter:", error);
+    alert("Error incrementing counter. Please check the console for details.");
+  }
+};
 
 const STATUS_BADGES: Record<
   ApplicationStatus,
@@ -131,6 +253,10 @@ export function ApplicationDetail({
 
   const contract = useRegisteredContract("std");
 
+  const sorobanContext = useSorobanReact();
+
+  const { address } = sorobanContext;
+
   const handleStatusChange = async () => {
     if (!selectedStatus) return;
 
@@ -155,48 +281,69 @@ export function ApplicationDetail({
         // Attempt contract invocation but don't block status change if it fails
         try {
           if (!contract) {
-            console.warn("Contract is not available - skipping proposal creation");
+            console.warn(
+              "Contract is not available - skipping proposal creation"
+            );
           } else {
             // Only try contract invocation if we have a contract
             try {
-              const smeDetailsString =application.smeInfo;
-              
+              const smeDetailsString = application.smeInfo;
+
               // Local blob URLs can't be accessed by the contract
               // In a production environment, we would upload the file to IPFS or similar
               // and use a publicly accessible URL
               let researchPaperUrl = "";
-              if (application.research && application.research.researchPaper && application.research.researchPaper.url) {
+              if (
+                application.research &&
+                application.research.researchPaper &&
+                application.research.researchPaper.url
+              ) {
                 researchPaperUrl = application.research.researchPaper.url;
-                console.log("Note: Using blob URL which may not be accessible to contract:", researchPaperUrl);
+                console.log(
+                  "Note: Using blob URL which may not be accessible to contract:",
+                  researchPaperUrl
+                );
               }
-              
-              console.log("Attempting contract invocation (may fail in development)...");
-              
-              const result = await contract.invoke({
-                method: "create_proposal",
-                args: [
-                  nativeToScVal("GALEHJJOMYUJGHUE3WWECVKUKVS6IO5VI67FUQJNA4KCYUTVBOAQG5V2", { type: "address" }),
-                    nativeToScVal(smeDetailsString, { type: "string"  }),
-                    nativeToScVal("https://papers.co/research123", { type: "string" }),
-                  nativeToScVal(BigInt(1000000), { type: "u128" }),
-                  nativeToScVal(BigInt(10000), { type: "u128" }),
-                  nativeToScVal(BigInt(100), { type: "u32" }),
-                  nativeToScVal(BigInt(5), { type: "u32" }),
-                  nativeToScVal(BigInt(90), { type: "u32" }),
-                  nativeToScVal(BigInt(15), { type: "u32" }),
-                  nativeToScVal(BigInt(25), { type: "u32" }),
-                ],
-                signAndSend: true,
-              });
-              
-              console.log("Proposal created:", result);
+
+              console.log(
+                "Attempting contract invocation (may fail in development)..."
+              );
+
+              console.log("Address:", address);
+
+              // await handleIncrement(address as string);
+
+              // const result = await contract.invoke({
+              //   method: "create_proposal",
+              //   args: [
+              //     nativeToScVal("GALEHJJOMYUJGHUE3WWECVKUKVS6IO5VI67FUQJNA4KCYUTVBOAQG5V2", { type: "address" }),
+              //       nativeToScVal(smeDetailsString, { type: "string"  }),
+              //       nativeToScVal("https://papers.co/research123", { type: "string" }),
+              //     nativeToScVal(BigInt(1000000), { type: "u128" }),
+              //     nativeToScVal(BigInt(10000), { type: "u128" }),
+              //     nativeToScVal(BigInt(100), { type: "u32" }),
+              //     nativeToScVal(BigInt(5), { type: "u32" }),
+              //     nativeToScVal(BigInt(90), { type: "u32" }),
+              //     nativeToScVal(BigInt(15), { type: "u32" }),
+              //     nativeToScVal(BigInt(25), { type: "u32" }),
+              //   ],
+              //   signAndSend: true,
+              // });
+
+              // console.log("Proposal created:", result);
             } catch (innerError) {
               console.error("Contract error:", innerError);
-              console.log("Status change successful but proposal creation failed. This may be due to:");
-              console.log("1. Using a local blob URL that the contract can't access");
+              console.log(
+                "Status change successful but proposal creation failed. This may be due to:"
+              );
+              console.log(
+                "1. Using a local blob URL that the contract can't access"
+              );
               console.log("2. Contract implementation issues");
               console.log("3. Network configuration issues");
-              console.log("Status will be updated but no proposal will be created on-chain");
+              console.log(
+                "Status will be updated but no proposal will be created on-chain"
+              );
             }
           }
         } catch (error) {

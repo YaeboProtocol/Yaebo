@@ -16,7 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn("min-h-screen flex flex-col", /* Add any body specific classes here */)}>
+      <body className={cn("min-h-screen flex flex-col bg-background text-foreground", /* Add any body specific classes here */)}>
         <Header />
         <main className="flex-grow container mx-auto p-4">
           {children}

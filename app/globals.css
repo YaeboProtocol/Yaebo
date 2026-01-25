@@ -7,50 +7,46 @@
   --color-background: theme(colors.white);
   --color-foreground: theme(colors.neutral.950);
 
-  --color-primary: theme(colors.yellow.500); /* Your main yellow */
-  --color-primary-foreground: theme(colors.neutral.950); /* Text on primary yellow */
+  --color-primary: theme(colors.indigo.600); /* Rich indigo primary */
+  --color-primary-foreground: theme(colors.white); /* White text on primary indigo */
 
-  /* Define other semantic colors using white, yellow, and neutrals */
+  /* Define other semantic colors using blue/indigo theming */
   --color-card: theme(colors.white);
   --color-card-foreground: theme(colors.neutral.950);
   --color-popover: theme(colors.white);
   --color-popover-foreground: theme(colors.neutral.950);
-  --color-secondary: theme(colors.yellow.100); /* Lighter yellow for secondary elements */
-  --color-secondary-foreground: theme(colors.neutral.900);
-  --color-muted: theme(colors.neutral.100);
-  --color-muted-foreground: theme(colors.neutral.500);
-  --color-accent: theme(colors.yellow.200); /* Accent yellow */
-  --color-accent-foreground: theme(colors.neutral.900);
+  --color-secondary: theme(colors.indigo.100); /* Light indigo for secondary elements */
+  --color-secondary-foreground: theme(colors.indigo.900);
+  --color-muted: theme(colors.gray.100);
+  --color-muted-foreground: theme(colors.gray.600);
+  --color-accent: theme(colors.indigo.200); /* Accent indigo */
+  --color-accent-foreground: theme(colors.indigo.900);
   --color-destructive: theme(colors.red.600); /* Keep destructive colors */
-  --color-destructive-foreground: theme(colors.neutral.50);
-  --color-border: theme(colors.neutral.200);
-  --color-input: theme(colors.neutral.300);
-  --color-ring: theme(colors.yellow.400); /* Ring color */
+  --color-destructive-foreground: theme(colors.white);
+  --color-border: theme(colors.gray.200);
+  --color-input: theme(colors.gray.300);
+  --color-ring: theme(colors.indigo.400); /* Ring color */
 
-  /* shadcn/ui uses HSL by default, map our colors to HSL vars */
-  /* We'll use placeholder HSL values initially. shadcn init might have added better ones,
-     or you might need a converter tool for precise HSL from hex/rgb.
-     For now, focusing on semantic mapping. */
+  /* HSL values for shadcn/ui */
   --background: 0 0% 100%; /* white */
-  --foreground: 240 10% 3.9%; /* neutral-950 approx */
+  --foreground: 224 71.4% 4.1%; /* neutral-950 */
   --card: 0 0% 100%;
-  --card-foreground: 240 10% 3.9%;
+  --card-foreground: 224 71.4% 4.1%;
   --popover: 0 0% 100%;
-  --popover-foreground: 240 10% 3.9%;
-  --primary: 53 98% 50%; /* yellow-500 approx */
-  --primary-foreground: 240 10% 3.9%;
-  --secondary: 55 93% 86%; /* yellow-100 approx */
-  --secondary-foreground: 240 6% 10%; /* neutral-900 approx */
-  --muted: 240 5% 96%; /* neutral-100 approx */
-  --muted-foreground: 240 4% 46%; /* neutral-500 approx */
-  --accent: 55 88% 79%; /* yellow-200 approx */
-  --accent-foreground: 240 6% 10%;
-  --destructive: 0 72% 51%; /* red-600 approx */
-  --destructive-foreground: 0 0% 98%; /* neutral-50 approx */
-  --border: 240 6% 90%; /* neutral-200 approx */
-  --input: 240 5% 84%; /* neutral-300 approx */
-  --ring: 53 96% 62%; /* yellow-400 approx */
-
+  --popover-foreground: 224 71.4% 4.1%;
+  --primary: 226 70% 55.5%; /* indigo-600 */
+  --primary-foreground: 0 0% 100%; /* white */
+  --secondary: 226 83% 95.3%; /* indigo-100 */
+  --secondary-foreground: 226 46% 32.2%; /* indigo-900 */
+  --muted: 220 14.3% 95.9%; /* gray-100 */
+  --muted-foreground: 220 8.9% 46.1%; /* gray-600 */
+  --accent: 226 70% 92.2%; /* indigo-200 */
+  --accent-foreground: 226 46% 32.2%; /* indigo-900 */
+  --destructive: 0 84.2% 60.2%; /* red-600 */
+  --destructive-foreground: 0 0% 100%; /* white */
+  --border: 220 13.0% 91.0%; /* gray-200 */
+  --input: 220 13.0% 83.0%; /* gray-300 */
+  --ring: 226 61% 71%; /* indigo-400 */
 
   --radius: 0.5rem;
 }
@@ -67,3 +63,7 @@
 }
 
 /* Add any custom base styles or component overrides below */
+
+
+
+

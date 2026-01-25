@@ -176,9 +176,20 @@ export default function ManufacturerDashboardPage() {
                   <div className="space-y-6">
                     <FileUpload
                       label="Upload Document"
-                      accept="application/pdf,image/*"
-                      onChange={(file) => handleFileUpload('additionalDocs', file)}
-                      loading={uploading}
+                      bucket="manufacturer-docs"
+                      path={`applications/${application.id}/additional`}
+                      onUploadComplete={(fileMetadata) => {
+                        if (fileMetadata && fileMetadata.url) {
+                          // Create a File-like object from the metadata
+                          const fileObj = new File(
+                            [new Blob()], // Empty blob as content
+                            fileMetadata.name,
+                            { type: fileMetadata.type }
+                          );
+                          handleFileUpload('additionalDocs', fileObj);
+                        }
+                      }}
+                      onError={(error) => setError(error)}
                     />
                     
                     <p className="text-sm text-gray-500">
@@ -273,16 +284,12 @@ export default function ManufacturerDashboardPage() {
                 <h4 className="text-sm font-medium text-gray-700">Investment Terms</h4>
                 <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <p className="text-xs text-gray-500">Lot Price</p>
-                    <p className="text-sm">${application.investmentTerms.lotPrice.toLocaleString()}</p>
+                    <p className="text-xs text-gray-500">Total Funding Amount</p>
+                    <p className="text-sm">${application.investmentTerms.totalFundingAmount.toLocaleString()}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Total Lots</p>
-                    <p className="text-sm">{application.investmentTerms.totalLots}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Maximum Per Investor</p>
-                    <p className="text-sm">{application.investmentTerms.maxPerInvestor} lots</p>
+                    <p className="text-xs text-gray-500">Investor Profit Share</p>
+                    <p className="text-sm">{application.investmentTerms.investorSharePercentage}%</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Minimum Period</p>

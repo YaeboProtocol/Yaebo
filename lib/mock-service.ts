@@ -197,9 +197,8 @@ export const initMockData = () => {
       additionalDocs: []
     },
     investmentTerms: {
-      lotPrice: 10000,
-      totalLots: 100,
-      maxPerInvestor: 5,
+      totalFundingAmount: 1000000,
+      investorSharePercentage: 60,
       minPeriod: 12,
       expectedReturn: 15,
       useOfFundsBreakdown: 'Equipment (40%), Operations (30%), R&D (20%), Marketing (10%)'

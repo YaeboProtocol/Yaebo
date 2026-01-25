@@ -16,9 +16,8 @@ export const smeInfoSchema = z.object({
 });
 
 export const investmentTermsSchema = z.object({
-  lotPrice: z.number().positive({ message: "Lot price must be positive" }),
-  totalLots: z.number().int().positive({ message: "Total lots must be a positive integer" }),
-  maxPerInvestor: z.number().int().positive({ message: "Maximum per investor must be a positive integer" }),
+  totalFundingAmount: z.number().positive({ message: "Funding amount must be positive" }),
+  investorSharePercentage: z.number().min(0, { message: "Investor share must be non-negative" }).max(100, { message: "Investor share cannot exceed 100%" }),
   minPeriod: z.number().int().positive({ message: "Minimum period must be a positive integer" }),
   expectedReturn: z.number().positive({ message: "Expected return must be positive" }),
   useOfFundsBreakdown: z.string().min(1, { message: "Use of funds breakdown is required" }),

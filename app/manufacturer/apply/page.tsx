@@ -32,9 +32,8 @@ export default function ManufacturerApplicationPage() {
       additionalDocs: [],
     },
     investmentTerms: {
-      lotPrice: 10000,
-      totalLots: 100,
-      maxPerInvestor: 5,
+      totalFundingAmount: 0,
+      investorSharePercentage: 0,
       minPeriod: 12,
       expectedReturn: 15,
       useOfFundsBreakdown: 'Equipment (40%), Operations (30%), R&D (20%), Marketing (10%)',

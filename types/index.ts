@@ -58,9 +58,8 @@ export interface ResearchInfo {
 }
 
 export interface InvestmentTerms {
-  lotPrice: number;
-  totalLots: number;
-  maxPerInvestor: number;
+  totalFundingAmount: number;
+  investorSharePercentage: number;
   minPeriod: number;
   expectedReturn: number;
   useOfFundsBreakdown: string;

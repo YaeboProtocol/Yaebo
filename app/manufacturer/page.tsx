@@ -180,7 +180,7 @@ export default function ManufacturerPage() {
                       </div>
                       <div className="flex items-center">
                         <span className="text-sm text-gray-500 w-1/3">Requested:</span>
-                        <span className="font-medium">${(app.investmentTerms.lotPrice * app.investmentTerms.totalLots).toLocaleString()}</span>
+                        <span className="font-medium">${app.investmentTerms.totalFundingAmount.toLocaleString()}</span>
                       </div>
                       <div className="flex items-center">
                         <span className="text-sm text-gray-500 w-1/3">Reg #:</span>

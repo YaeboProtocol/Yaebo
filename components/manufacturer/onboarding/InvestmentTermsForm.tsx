@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, DollarSign, Percent } from "lucide-react";
+import { Loader2, DollarSign, Percent, Info } from "lucide-react";
 import { useStepCompletion } from './MultiStepForm';
 
 interface InvestmentTermsFormProps {
@@ -25,9 +25,8 @@ export default function InvestmentTermsForm({
   const form = useForm<InvestmentTermsFormValues>({
     resolver: zodResolver(investmentTermsSchema),
     defaultValues: defaultValues || {
-      lotPrice: 0,
-      totalLots: 0,
-      maxPerInvestor: 0,
+      totalFundingAmount: 0,
+      investorSharePercentage: 0,
       minPeriod: 0,
       expectedReturn: 0,
       useOfFundsBreakdown: '',
@@ -49,19 +48,33 @@ export default function InvestmentTermsForm({
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <Card>
           <CardContent className="pt-6">
+            <div className="mb-6">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+                <Info className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h3 className="text-sm font-medium text-amber-800">Funding Structure</h3>
+                  <p className="text-xs text-amber-700 mt-1">
+                    The DAO will determine the specific funding structure, including lot size and pricing, 
+                    after reviewing your application. You only need to specify your total funding needs and 
+                    expected terms.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
-                name="lotPrice"
+                name="totalFundingAmount"
                 render={({ field: { value, onChange, ...field } }) => (
-                  <FormItem>
-                    <FormLabel>Lot Price (USD)</FormLabel>
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Total Funding Amount Requested (USD)</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <DollarSign className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
                         <Input 
                           type="number"
-                          placeholder="0.00" 
+                          placeholder="1000000" 
                           className="pl-8"
                           {...field}
                           value={value || ''}
@@ -69,6 +82,9 @@ export default function InvestmentTermsForm({
                         />
                       </div>
                     </FormControl>
+                    <FormDescription>
+                      The total amount of funding you are seeking through the platform
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -76,39 +92,27 @@ export default function InvestmentTermsForm({
               
               <FormField
                 control={form.control}
-                name="totalLots"
+                name="investorSharePercentage"
                 render={({ field: { value, onChange, ...field } }) => (
                   <FormItem>
-                    <FormLabel>Total Lots</FormLabel>
+                    <FormLabel>Investor Profit Share (%)</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="100" 
-                        {...field}
-                        value={value || ''}
-                        onChange={(e) => onChange(parseInt(e.target.value) || 0)}
-                      />
+                      <div className="relative">
+                        <Input 
+                          type="number"
+                          step="0.1" 
+                          placeholder="60.0" 
+                          className="pr-8"
+                          {...field}
+                          value={value || ''}
+                          onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+                        />
+                        <Percent className="absolute right-2 top-2.5 h-4 w-4 text-gray-500" />
+                      </div>
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="maxPerInvestor"
-                render={({ field: { value, onChange, ...field } }) => (
-                  <FormItem>
-                    <FormLabel>Maximum Lots Per Investor</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="10" 
-                        {...field}
-                        value={value || ''}
-                        onChange={(e) => onChange(parseInt(e.target.value) || 0)}
-                      />
-                    </FormControl>
+                    <FormDescription>
+                      Percentage of profits you're willing to share with investors
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -129,6 +133,9 @@ export default function InvestmentTermsForm({
                         onChange={(e) => onChange(parseInt(e.target.value) || 0)}
                       />
                     </FormControl>
+                    <FormDescription>
+                      The minimum length of time for the investment
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -139,7 +146,7 @@ export default function InvestmentTermsForm({
                 name="expectedReturn"
                 render={({ field: { value, onChange, ...field } }) => (
                   <FormItem>
-                    <FormLabel>Expected Return (% Per Annum)</FormLabel>
+                    <FormLabel>Expected Annual Return (%)</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Input 
@@ -154,6 +161,9 @@ export default function InvestmentTermsForm({
                         <Percent className="absolute right-2 top-2.5 h-4 w-4 text-gray-500" />
                       </div>
                     </FormControl>
+                    <FormDescription>
+                      Your estimate of annual returns from this project
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -196,7 +206,7 @@ export default function InvestmentTermsForm({
                 Saving...
               </>
             ) : (
-              'Save & Complete'
+              'Save & Complete Application'
             )}
           </Button>
         </div>

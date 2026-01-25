@@ -2,14 +2,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Plus, ArrowLeft, Upload } from 'lucide-react';
+import { Plus, ArrowLeft, Upload, FileUp, FilePlus, BarChart3, ClipboardCheck } from 'lucide-react';
 import Link from 'next/link';
 import { ManufacturerApplication, Document } from '@/types';
 import { getApplication, addComment, addDocument, submitApplication, initMockData } from '@/lib/mock-service';
 import ApplicationStatus from '@/components/manufacturer/dashboard/ApplicationStatus';
 import DocumentList from '@/components/manufacturer/dashboard/DocumentList';
 import CommentsSection from '@/components/manufacturer/dashboard/CommentsSection';
-import { FileUpload } from '@/components/ui/file-upload';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 
 export default function ManufacturerDashboardPage() {
   const searchParams = useSearchParams();
@@ -20,6 +24,7 @@ export default function ManufacturerDashboardPage() {
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     // Initialize mock data
@@ -93,6 +98,49 @@ export default function ManufacturerDashboardPage() {
     }
   };
 
+  // Calculate application completion percentage
+  const calculateCompletionPercentage = (app: ManufacturerApplication): number => {
+    let totalFields = 0;
+    let completedFields = 0;
+    
+    // Company info
+    if (app.companyInfo) {
+      totalFields += 4; // name, stellarPubkey, contact, website
+      if (app.companyInfo.name) completedFields += 1;
+      if (app.companyInfo.stellarPubkey) completedFields += 1;
+      if (app.companyInfo.contact) completedFields += 1;
+      if (app.companyInfo.website) completedFields += 1;
+    }
+    
+    // SME info
+    if (app.smeInfo) {
+      totalFields += 5; // name, regNumber, jurisdiction, address, website
+      if (app.smeInfo.name) completedFields += 1;
+      if (app.smeInfo.regNumber) completedFields += 1;
+      if (app.smeInfo.jurisdiction) completedFields += 1;
+      if (app.smeInfo.address) completedFields += 1;
+      if (app.smeInfo.website) completedFields += 1;
+    }
+    
+    // Investment terms
+    if (app.investmentTerms) {
+      totalFields += 5; // totalFundingAmount, investorSharePercentage, minPeriod, expectedReturn, useOfFundsBreakdown
+      if (app.investmentTerms.totalFundingAmount) completedFields += 1;
+      if (app.investmentTerms.investorSharePercentage) completedFields += 1;
+      if (app.investmentTerms.minPeriod) completedFields += 1;
+      if (app.investmentTerms.expectedReturn) completedFields += 1;
+      if (app.investmentTerms.useOfFundsBreakdown) completedFields += 1;
+    }
+    
+    // Documents (count key documents)
+    totalFields += 3; // incorporationCert, taxCert, businessPlan
+    if (app.documents.incorporationCert) completedFields += 1;
+    if (app.documents.taxCert) completedFields += 1;
+    if (app.documents.businessPlan) completedFields += 1;
+    
+    return Math.round((completedFields / totalFields) * 100);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-12 px-4 sm:px-6 lg:px-8">
@@ -117,13 +165,12 @@ export default function ManufacturerDashboardPage() {
             We couldn't find the application you're looking for. Please check the URL or start a new application.
           </p>
           <div className="mt-8">
-            <Link
-              href="/manufacturer/apply"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              New Application
-            </Link>
+            <Button asChild>
+              <Link href="/manufacturer/apply">
+                <Plus className="h-5 w-5 mr-2" />
+                New Application
+              </Link>
+            </Button>
           </div>
         </div>
       </div>
@@ -133,24 +180,35 @@ export default function ManufacturerDashboardPage() {
   const needsMoreInfo = application.status === 'Needs More Info';
   const isDraft = application.status === 'Draft';
   const canAddDocuments = needsMoreInfo || isDraft;
+  const completionPercentage = calculateCompletionPercentage(application);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
+        <div className="mb-8 flex items-center justify-between">
           <Link
-            href="/"
+            href="/manufacturer"
             className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-500"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Home
           </Link>
+          
+          {isDraft && (
+            <Button 
+              onClick={handleSubmitApplication}
+              disabled={submitting || completionPercentage < 80}
+              className="ml-auto"
+            >
+              {submitting ? 'Submitting...' : 'Submit Application'}
+            </Button>
+          )}
         </div>
         
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Manufacturer Dashboard</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Application Dashboard</h1>
           <p className="mt-2 text-gray-500">
-            View and manage your application for debt tokenization.
+            Track and manage your application for debt tokenization
           </p>
         </div>
         
@@ -161,152 +219,320 @@ export default function ManufacturerDashboardPage() {
         )}
         
         <div className="space-y-8">
-          <ApplicationStatus status={application.status} updatedAt={application.updatedAt} />
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div>
-              <DocumentList documents={application.documents} />
-              
-              {canAddDocuments && (
-                <div className="mt-6 bg-white shadow-sm rounded-lg border border-gray-200 p-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">
-                    {needsMoreInfo ? 'Upload Additional Documents' : 'Upload Documents'}
-                  </h3>
-                  
-                  <div className="space-y-6">
-                    <FileUpload
-                      label="Upload Document"
-                      bucket="manufacturer-docs"
-                      path={`applications/${application.id}/additional`}
-                      onUploadComplete={(fileMetadata) => {
-                        if (fileMetadata && fileMetadata.url) {
-                          // Create a File-like object from the metadata
-                          const fileObj = new File(
-                            [new Blob()], // Empty blob as content
-                            fileMetadata.name,
-                            { type: fileMetadata.type }
-                          );
-                          handleFileUpload('additionalDocs', fileObj);
-                        }
-                      }}
-                      onError={(error) => setError(error)}
-                    />
-                    
-                    <p className="text-sm text-gray-500">
-                      Upload any additional documents requested by the diligence team or that you think would help your application.
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="md:col-span-2">
+              <CardHeader className="pb-2">
+                <ApplicationStatus status={application.status} updatedAt={application.updatedAt} />
+              </CardHeader>
+              <CardContent>
+                <div className="mt-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium text-gray-700">Application Completion</span>
+                    <span className="text-sm font-medium text-blue-600">{completionPercentage}%</span>
+                  </div>
+                  <Progress value={completionPercentage} className="h-2" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg">Application Summary</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-xs text-gray-500">Application ID</p>
+                    <p className="font-medium text-sm">{application.id}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Company</p>
+                    <p className="font-medium text-sm">{application.companyInfo.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Requested Funding</p>
+                    <p className="font-medium text-sm">${application.investmentTerms.totalFundingAmount.toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Submitted On</p>
+                    <p className="font-medium text-sm">
+                      {application.status === 'Draft' 
+                        ? 'Not yet submitted' 
+                        : new Date(application.createdAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })
+                      }
                     </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <Tabs defaultValue="overview" onValueChange={setActiveTab} value={activeTab}>
+            <TabsList className="grid grid-cols-4 w-full mb-6">
+              <TabsTrigger value="overview">
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="documents">
+                <FileUp className="h-4 w-4 mr-2" />
+                Documents
+              </TabsTrigger>
+              <TabsTrigger value="communication">
+                <ClipboardCheck className="h-4 w-4 mr-2" />
+                Communication
+              </TabsTrigger>
+              <TabsTrigger value="details">
+                <FilePlus className="h-4 w-4 mr-2" />
+                Full Details
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="overview" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Application Progress</CardTitle>
+                  <CardDescription>Current status and next steps for your application</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium">Company Information</h3>
+                        <p className="text-sm text-gray-500">Basic company details and contact information</p>
+                      </div>
+                      <Badge 
+                        variant={application.companyInfo ? "success" : "outline"}
+                        className={application.companyInfo ? "bg-green-100 text-green-800" : ""}
+                      >
+                        {application.companyInfo ? "Complete" : "Incomplete"}
+                      </Badge>
+                    </div>
                     
-                    {isDraft && (
-                      <div className="mt-6">
-                        <button
-                          type="button"
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium">SME Details</h3>
+                        <p className="text-sm text-gray-500">Legal entity information and registration details</p>
+                      </div>
+                      <Badge 
+                        variant={application.smeInfo ? "success" : "outline"}
+                        className={application.smeInfo ? "bg-green-100 text-green-800" : ""}
+                      >
+                        {application.smeInfo ? "Complete" : "Incomplete"}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium">Investment Terms</h3>
+                        <p className="text-sm text-gray-500">Funding request and return expectations</p>
+                      </div>
+                      <Badge 
+                        variant={application.investmentTerms ? "success" : "outline"}
+                        className={application.investmentTerms ? "bg-green-100 text-green-800" : ""}
+                      >
+                        {application.investmentTerms ? "Complete" : "Incomplete"}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium">Required Documents</h3>
+                        <p className="text-sm text-gray-500">Legal and financial documentation</p>
+                      </div>
+                      <Badge 
+                        variant={application.documents.incorporationCert && application.documents.taxCert ? "success" : "outline"}
+                        className={application.documents.incorporationCert && application.documents.taxCert ? "bg-green-100 text-green-800" : ""}
+                      >
+                        {application.documents.incorporationCert && application.documents.taxCert ? "Complete" : "Incomplete"}
+                      </Badge>
+                    </div>
+
+                    {application.status === 'Draft' && (
+                      <div className="mt-6 pt-6 border-t">
+                        <h3 className="font-medium mb-2">Ready to Submit?</h3>
+                        <p className="text-sm text-gray-500 mb-4">
+                          Once you submit your application, our diligence team will review it and may request additional information.
+                        </p>
+                        <Button 
                           onClick={handleSubmitApplication}
-                          disabled={submitting}
-                          className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={submitting || completionPercentage < 80}
+                          className="w-full"
                         >
                           {submitting ? 'Submitting...' : 'Submit Application'}
-                        </button>
+                        </Button>
+                        {completionPercentage < 80 && (
+                          <p className="text-xs text-amber-600 mt-2">
+                            Please complete more of your application before submitting.
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
-                </div>
+                </CardContent>
+              </Card>
+              
+              <CommentsSection
+                comments={application.comments}
+                onAddComment={handleAddComment}
+                canReply={application.status !== 'Draft'}
+              />
+            </TabsContent>
+            
+            <TabsContent value="documents" className="space-y-6">
+              <DocumentList documents={application.documents} />
+              
+              {canAddDocuments && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{needsMoreInfo ? 'Upload Additional Documents' : 'Upload Documents'}</CardTitle>
+                    <CardDescription>
+                      Provide any required documentation for your application
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Button
+                            variant="outline"
+                            className="w-full h-20 flex flex-col items-center justify-center"
+                            asChild
+                          >
+                            <label>
+                              <input
+                                type="file"
+                                className="sr-only"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0] || null;
+                                  if (file) handleFileUpload('additionalDocs', file);
+                                }}
+                              />
+                              <Upload className="h-6 w-6 mb-2" />
+                              <span>Upload Document</span>
+                            </label>
+                          </Button>
+                          <p className="text-xs text-gray-500 mt-2">
+                            Upload any additional documents requested by the diligence team.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
-            </div>
+            </TabsContent>
             
-            <CommentsSection
-              comments={application.comments}
-              onAddComment={handleAddComment}
-              canReply={application.status !== 'Draft'}
-            />
-          </div>
-          
-          <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Application Details</h3>
+            <TabsContent value="communication" className="space-y-6">
+              <CommentsSection
+                comments={application.comments}
+                onAddComment={handleAddComment}
+                canReply={application.status !== 'Draft'}
+              />
+            </TabsContent>
             
-            <div className="space-y-6">
-              <div>
-                <h4 className="text-sm font-medium text-gray-700">Company Information</h4>
-                <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-gray-500">Name</p>
-                    <p className="text-sm">{application.companyInfo.name}</p>
+            <TabsContent value="details" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Company Information</CardTitle>
+                  <CardDescription>Basic details about your company</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500">Name</p>
+                      <p className="text-sm font-medium">{application.companyInfo.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Stellar Public Key</p>
+                      <p className="text-sm font-mono text-xs truncate font-medium">{application.companyInfo.stellarPubkey}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Contact</p>
+                      <p className="text-sm font-medium">{application.companyInfo.contact}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Website</p>
+                      <p className="text-sm font-medium">
+                        <a href={application.companyInfo.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-500">
+                          {application.companyInfo.website}
+                        </a>
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Stellar Public Key</p>
-                    <p className="text-sm font-mono text-xs truncate">{application.companyInfo.stellarPubkey}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Contact</p>
-                    <p className="text-sm">{application.companyInfo.contact}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Website</p>
-                    <p className="text-sm">
-                      <a href={application.companyInfo.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-500">
-                        {application.companyInfo.website}
-                      </a>
-                    </p>
-                  </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
               
-              <div>
-                <h4 className="text-sm font-medium text-gray-700">SME Information</h4>
-                <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-gray-500">Name</p>
-                    <p className="text-sm">{application.smeInfo.name}</p>
+              <Card>
+                <CardHeader>
+                  <CardTitle>SME Information</CardTitle>
+                  <CardDescription>Legal entity details</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500">Name</p>
+                      <p className="text-sm font-medium">{application.smeInfo.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Registration Number</p>
+                      <p className="text-sm font-medium">{application.smeInfo.regNumber}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Jurisdiction</p>
+                      <p className="text-sm font-medium">{application.smeInfo.jurisdiction}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Website</p>
+                      <p className="text-sm font-medium">
+                        <a href={application.smeInfo.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-500">
+                          {application.smeInfo.website}
+                        </a>
+                      </p>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <p className="text-xs text-gray-500">Address</p>
+                      <p className="text-sm font-medium whitespace-pre-line">{application.smeInfo.address}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Registration Number</p>
-                    <p className="text-sm">{application.smeInfo.regNumber}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Jurisdiction</p>
-                    <p className="text-sm">{application.smeInfo.jurisdiction}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Website</p>
-                    <p className="text-sm">
-                      <a href={application.smeInfo.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-500">
-                        {application.smeInfo.website}
-                      </a>
-                    </p>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <p className="text-xs text-gray-500">Address</p>
-                    <p className="text-sm whitespace-pre-line">{application.smeInfo.address}</p>
-                  </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
               
-              <div>
-                <h4 className="text-sm font-medium text-gray-700">Investment Terms</h4>
-                <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <p className="text-xs text-gray-500">Total Funding Amount</p>
-                    <p className="text-sm">${application.investmentTerms.totalFundingAmount.toLocaleString()}</p>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Investment Terms</CardTitle>
+                  <CardDescription>Funding request and return details</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500">Total Funding Amount</p>
+                      <p className="text-sm font-medium">${application.investmentTerms.totalFundingAmount.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Investor Profit Share</p>
+                      <p className="text-sm font-medium">{application.investmentTerms.investorSharePercentage}%</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Minimum Period</p>
+                      <p className="text-sm font-medium">{application.investmentTerms.minPeriod} months</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Expected Return</p>
+                      <p className="text-sm font-medium">{application.investmentTerms.expectedReturn}%</p>
+                    </div>
+                    <div className="sm:col-span-3">
+                      <p className="text-xs text-gray-500">Use of Funds Breakdown</p>
+                      <p className="text-sm font-medium">{application.investmentTerms.useOfFundsBreakdown}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Investor Profit Share</p>
-                    <p className="text-sm">{application.investmentTerms.investorSharePercentage}%</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Minimum Period</p>
-                    <p className="text-sm">{application.investmentTerms.minPeriod} months</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500">Expected Return</p>
-                    <p className="text-sm">{application.investmentTerms.expectedReturn}%</p>
-                  </div>
-                  <div className="sm:col-span-3">
-                    <p className="text-xs text-gray-500">Use of Funds Breakdown</p>
-                    <p className="text-sm">{application.investmentTerms.useOfFundsBreakdown}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>

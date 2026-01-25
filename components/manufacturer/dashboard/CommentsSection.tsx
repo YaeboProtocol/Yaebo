@@ -2,9 +2,14 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Comment, Document } from '@/types';
-import { FileText, Image as ImageIcon, Paperclip, Send, Upload, X, Loader2 } from 'lucide-react';
-import { FileUpload } from '@/components/ui/file-upload';
+import { FileText, Image as ImageIcon, Paperclip, Send, Upload, X, Loader2, MessageSquare } from 'lucide-react';
 import { uploadDocument } from '@/lib/mock-service';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 interface CommentsSectionProps {
   comments: Comment[];
@@ -94,164 +99,186 @@ export default function CommentsSection({
     }
   };
 
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'Manufacturer':
+        return 'bg-blue-100 text-blue-800';
+      case 'Diligence':
+        return 'bg-purple-100 text-purple-800';
+      case 'DAO':
+        return 'bg-amber-100 text-amber-800';
+      case 'Investor':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-      <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900">Comments</h3>
-      </div>
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-primary" />
+            <CardTitle>Comments & Updates</CardTitle>
+          </div>
+          <Badge variant="outline" className="text-xs font-normal">
+            {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
+          </Badge>
+        </div>
+        <CardDescription>
+          Communication with the diligence team and updates on your application
+        </CardDescription>
+      </CardHeader>
       
-      <div className="divide-y divide-gray-200">
-        {comments.length === 0 ? (
-          <div className="p-6 text-center">
-            <p className="text-sm text-gray-500">No comments yet.</p>
-          </div>
-        ) : (
-          <ul className="divide-y divide-gray-200">
-            {comments.map((comment) => (
-              <li key={comment.id} className="p-4">
-                <div className="flex space-x-3">
-                  <div className="flex-shrink-0">
-                    <Image
-                      className="h-10 w-10 rounded-full"
-                      src={comment.user.avatar}
-                      alt={comment.user.name}
-                      width={40}
-                      height={40}
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center">
-                      <p className="text-sm font-medium text-gray-900">
-                        {comment.user.name}
-                      </p>
-                      <p className="ml-1 text-xs text-gray-500">
-                        ({comment.user.role})
-                      </p>
-                      <p className="ml-2 text-xs text-gray-500">
-                        {formatDate(comment.createdAt)}
-                      </p>
-                    </div>
-                    <div className="mt-2 text-sm text-gray-700 whitespace-pre-line">
-                      {comment.content}
-                    </div>
-                    
-                    {comment.attachments.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {comment.attachments.map((attachment) => (
-                          <Link
-                            key={attachment.id}
-                            href={attachment.url}
-                            target="_blank"
-                            className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                          >
-                            {getAttachmentIcon(attachment)}
-                            <span className="ml-1 max-w-[150px] truncate">
-                              {attachment.name}
-                            </span>
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-        
-        {canReply && (
-          <div className="p-4 bg-gray-50">
-            <form onSubmit={handleCommentSubmit} className="space-y-4">
-              <label htmlFor="comment" className="sr-only">
-                Add your comment
-              </label>
-              <textarea
-                id="comment"
-                name="comment"
-                rows={3}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                placeholder="Add a comment or reply to the diligence team..."
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                disabled={isSubmitting}
-              />
-              
-              {attachments.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {attachments.map((attachment) => (
-                    <div
-                      key={attachment.id}
-                      className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white"
-                    >
-                      {getAttachmentIcon(attachment)}
-                      <span className="ml-1 max-w-[150px] truncate">
-                        {attachment.name}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => removeAttachment(attachment.id)}
-                        className="ml-1 text-gray-400 hover:text-gray-500"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
+      <CardContent className="p-0">
+        <div className="max-h-[400px] overflow-y-auto px-6">
+          {comments.length === 0 ? (
+            <div className="py-12 text-center">
+              <MessageSquare className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+              <p className="text-sm text-gray-500">No comments yet.</p>
+              {canReply && (
+                <p className="text-xs text-gray-400 mt-1">
+                  Start the conversation using the form below.
+                </p>
               )}
-              
-              <div className="flex justify-between items-center">
-                <div className="flex">
-                  <div className="relative">
-                    <input
-                      id="file-upload"
-                      name="file-upload"
-                      type="file"
-                      className="sr-only"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0] || null;
-                        if (file) {
-                          handleFileUpload(file);
-                        }
-                      }}
-                      disabled={isUploading || isSubmitting}
-                    />
-                    <label
-                      htmlFor="file-upload"
-                      className={`inline-flex items-center px-2.5 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                        isUploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
-                      }`}
-                    >
-                      {isUploading ? (
-                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                      ) : (
-                        <Upload className="h-4 w-4 mr-1" />
+            </div>
+          ) : (
+            <ul className="space-y-6 py-4">
+              {comments.map((comment) => (
+                <li key={comment.id} className="relative">
+                  <div className="flex gap-4">
+                    <Avatar>
+                      <AvatarImage src={comment.user.avatar} alt={comment.user.name} />
+                      <AvatarFallback>{comment.user.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center flex-wrap gap-2">
+                        <h4 className="font-medium text-sm">{comment.user.name}</h4>
+                        <Badge variant="secondary" className={cn("text-xs px-2 py-0.5 h-5", getRoleColor(comment.user.role))}>
+                          {comment.user.role}
+                        </Badge>
+                        <span className="text-xs text-gray-500">{formatDate(comment.createdAt)}</span>
+                      </div>
+                      
+                      <div className="text-sm text-gray-700 whitespace-pre-line bg-gray-50 p-3 rounded-lg rounded-tl-none">
+                        {comment.content}
+                      </div>
+                      
+                      {comment.attachments.length > 0 && (
+                        <div className="flex flex-wrap gap-2 py-1">
+                          {comment.attachments.map((attachment) => (
+                            <Link
+                              key={attachment.id}
+                              href={attachment.url}
+                              target="_blank"
+                              className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-xs font-medium text-gray-700 transition-colors"
+                            >
+                              {getAttachmentIcon(attachment)}
+                              <span className="max-w-[150px] truncate">
+                                {attachment.name}
+                              </span>
+                            </Link>
+                          ))}
+                        </div>
                       )}
-                      Attach File
-                    </label>
+                    </div>
                   </div>
-                </div>
-                
-                <button
-                  type="submit"
-                  disabled={isSubmitting || commentText.trim() === ''}
-                  className={`inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                    isSubmitting || commentText.trim() === ''
-                      ? 'opacity-50 cursor-not-allowed'
-                      : ''
-                  }`}
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4 mr-1" />
-                  )}
-                  Send
-                </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </CardContent>
+      
+      {canReply && (
+        <CardFooter className="flex flex-col p-4 pt-6 border-t">
+          <form onSubmit={handleCommentSubmit} className="w-full space-y-4">
+            <Textarea
+              placeholder="Add a comment or reply to the diligence team..."
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              disabled={isSubmitting}
+              className="min-h-24 resize-none"
+            />
+            
+            {attachments.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {attachments.map((attachment) => (
+                  <Badge
+                    key={attachment.id}
+                    variant="secondary"
+                    className="gap-1.5 py-1 pl-3 h-7"
+                  >
+                    {getAttachmentIcon(attachment)}
+                    <span className="max-w-[150px] truncate">
+                      {attachment.name}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5 rounded-full ml-1 hover:bg-gray-200"
+                      onClick={() => removeAttachment(attachment.id)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                ))}
               </div>
-            </form>
-          </div>
-        )}
-      </div>
-    </div>
+            )}
+            
+            <div className="flex justify-between items-center">
+              <div className="relative">
+                <input
+                  id="file-upload"
+                  name="file-upload"
+                  type="file"
+                  className="sr-only"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    if (file) {
+                      handleFileUpload(file);
+                    }
+                  }}
+                  disabled={isUploading || isSubmitting}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                  disabled={isUploading || isSubmitting}
+                  asChild
+                >
+                  <label htmlFor="file-upload">
+                    {isUploading ? (
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4 mr-1" />
+                    )}
+                    Attach File
+                  </label>
+                </Button>
+              </div>
+              
+              <Button
+                type="submit"
+                disabled={isSubmitting || commentText.trim() === ''}
+                size="sm"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4 mr-2" />
+                )}
+                Send
+              </Button>
+            </div>
+          </form>
+        </CardFooter>
+      )}
+    </Card>
   );
 } 

@@ -63,6 +63,9 @@ export interface InvestmentTerms {
   minPeriod: number;
   expectedReturn: number;
   useOfFundsBreakdown: string;
+  lotPrice: number;
+  totalLots: number;
+  maxPerInvestor: number;
 }
 
 export interface Comment {

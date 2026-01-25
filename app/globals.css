@@ -1,26 +1,69 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-background: theme(colors.white);
+  --color-foreground: theme(colors.neutral.950);
+
+  --color-primary: theme(colors.yellow.500); /* Your main yellow */
+  --color-primary-foreground: theme(colors.neutral.950); /* Text on primary yellow */
+
+  /* Define other semantic colors using white, yellow, and neutrals */
+  --color-card: theme(colors.white);
+  --color-card-foreground: theme(colors.neutral.950);
+  --color-popover: theme(colors.white);
+  --color-popover-foreground: theme(colors.neutral.950);
+  --color-secondary: theme(colors.yellow.100); /* Lighter yellow for secondary elements */
+  --color-secondary-foreground: theme(colors.neutral.900);
+  --color-muted: theme(colors.neutral.100);
+  --color-muted-foreground: theme(colors.neutral.500);
+  --color-accent: theme(colors.yellow.200); /* Accent yellow */
+  --color-accent-foreground: theme(colors.neutral.900);
+  --color-destructive: theme(colors.red.600); /* Keep destructive colors */
+  --color-destructive-foreground: theme(colors.neutral.50);
+  --color-border: theme(colors.neutral.200);
+  --color-input: theme(colors.neutral.300);
+  --color-ring: theme(colors.yellow.400); /* Ring color */
+
+  /* shadcn/ui uses HSL by default, map our colors to HSL vars */
+  /* We'll use placeholder HSL values initially. shadcn init might have added better ones,
+     or you might need a converter tool for precise HSL from hex/rgb.
+     For now, focusing on semantic mapping. */
+  --background: 0 0% 100%; /* white */
+  --foreground: 240 10% 3.9%; /* neutral-950 approx */
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 3.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 3.9%;
+  --primary: 53 98% 50%; /* yellow-500 approx */
+  --primary-foreground: 240 10% 3.9%;
+  --secondary: 55 93% 86%; /* yellow-100 approx */
+  --secondary-foreground: 240 6% 10%; /* neutral-900 approx */
+  --muted: 240 5% 96%; /* neutral-100 approx */
+  --muted-foreground: 240 4% 46%; /* neutral-500 approx */
+  --accent: 55 88% 79%; /* yellow-200 approx */
+  --accent-foreground: 240 6% 10%;
+  --destructive: 0 72% 51%; /* red-600 approx */
+  --destructive-foreground: 0 0% 98%; /* neutral-50 approx */
+  --border: 240 6% 90%; /* neutral-200 approx */
+  --input: 240 5% 84%; /* neutral-300 approx */
+  --ring: 53 96% 62%; /* yellow-400 approx */
+
+
+  --radius: 0.5rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: 'Inter', sans-serif; /* Apply Inter font */
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
+/* Add any custom base styles or component overrides below */

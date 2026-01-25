@@ -98,15 +98,15 @@ export default function InvestmentTermsForm({
                     <FormLabel>Investor Profit Share (%)</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Input 
-                          type="number"
+                      <Input 
+                        type="number" 
                           step="0.1" 
                           placeholder="60.0" 
                           className="pr-8"
-                          {...field}
-                          value={value || ''}
+                        {...field}
+                        value={value || ''}
                           onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-                        />
+                      />
                         <Percent className="absolute right-2 top-2.5 h-4 w-4 text-gray-500" />
                       </div>
                     </FormControl>

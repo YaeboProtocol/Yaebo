@@ -78,7 +78,7 @@ A platform for tokenizing high-margin manufacturing debt, enabling crypto invest
 ---
 
 ## Architecture
-- **Frontend**: Next.js, Tailwind, shadcn/ui, Inter V font, white/yellow theme, responsive (desktop-first)
+- **Frontend**: Next.js, Tailwind, shadcn/ui, Inter V font, responsive (desktop-first)
 - **Backend/API**: Next.js API routes
 - **Database**: Supabase (Postgres)
 - **File Storage**: Supabase Storage (fallback: uploadthing)

@@ -13,12 +13,12 @@ export default function DiligenceDashboardPage() {
   return (
     <div className="container mx-auto py-10 space-y-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Diligence Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
-            Review and process manufacturer applications
-          </p>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Diligence Dashboard</h1>
+        <p className="text-muted-foreground mt-1">
+          Review and process manufacturer applications
+        </p>
+      </div>
       </div>
 
       {/* Quick stats cards */}
@@ -96,12 +96,12 @@ export default function DiligenceDashboardPage() {
         
         <div className="mt-6">
           <TabsContent value="applications" className="m-0">
-            <ApplicationDashboard />
-          </TabsContent>
+          <ApplicationDashboard />
+        </TabsContent>
           
           <TabsContent value="analytics" className="m-0">
-            <ApplicationAnalytics />
-          </TabsContent>
+          <ApplicationAnalytics />
+        </TabsContent>
         </div>
       </Tabs>
     </div>

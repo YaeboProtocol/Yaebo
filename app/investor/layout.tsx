@@ -9,7 +9,7 @@ export default function InvestorLayout({
 }) {
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-gray-50 to-white">
-      {children}
+            {children}
     </div>
   );
 } 

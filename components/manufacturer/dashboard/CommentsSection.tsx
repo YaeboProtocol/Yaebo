@@ -125,7 +125,7 @@ export default function CommentsSection({
           <Badge variant="outline" className="text-xs font-normal">
             {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
           </Badge>
-        </div>
+      </div>
         <CardDescription>
           Communication with the diligence team and updates on your application
         </CardDescription>
@@ -133,19 +133,19 @@ export default function CommentsSection({
       
       <CardContent className="p-0">
         <div className="max-h-[400px] overflow-y-auto px-6">
-          {comments.length === 0 ? (
+        {comments.length === 0 ? (
             <div className="py-12 text-center">
               <MessageSquare className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-              <p className="text-sm text-gray-500">No comments yet.</p>
+            <p className="text-sm text-gray-500">No comments yet.</p>
               {canReply && (
                 <p className="text-xs text-gray-400 mt-1">
                   Start the conversation using the form below.
                 </p>
               )}
-            </div>
-          ) : (
+          </div>
+        ) : (
             <ul className="space-y-6 py-4">
-              {comments.map((comment) => (
+            {comments.map((comment) => (
                 <li key={comment.id} className="relative">
                   <div className="flex gap-4">
                     <Avatar>
@@ -160,90 +160,90 @@ export default function CommentsSection({
                           {comment.user.role}
                         </Badge>
                         <span className="text-xs text-gray-500">{formatDate(comment.createdAt)}</span>
-                      </div>
+                  </div>
                       
                       <div className="text-sm text-gray-700 whitespace-pre-line bg-gray-50 p-3 rounded-lg rounded-tl-none">
-                        {comment.content}
-                      </div>
-                      
-                      {comment.attachments.length > 0 && (
-                        <div className="flex flex-wrap gap-2 py-1">
-                          {comment.attachments.map((attachment) => (
-                            <Link
-                              key={attachment.id}
-                              href={attachment.url}
-                              target="_blank"
-                              className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-xs font-medium text-gray-700 transition-colors"
-                            >
-                              {getAttachmentIcon(attachment)}
-                              <span className="max-w-[150px] truncate">
-                                {attachment.name}
-                              </span>
-                            </Link>
-                          ))}
-                        </div>
-                      )}
+                      {comment.content}
                     </div>
+                    
+                    {comment.attachments.length > 0 && (
+                        <div className="flex flex-wrap gap-2 py-1">
+                        {comment.attachments.map((attachment) => (
+                          <Link
+                            key={attachment.id}
+                            href={attachment.url}
+                            target="_blank"
+                              className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-xs font-medium text-gray-700 transition-colors"
+                          >
+                            {getAttachmentIcon(attachment)}
+                              <span className="max-w-[150px] truncate">
+                              {attachment.name}
+                            </span>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </li>
-              ))}
-            </ul>
-          )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
         </div>
       </CardContent>
-      
-      {canReply && (
+        
+        {canReply && (
         <CardFooter className="flex flex-col p-4 pt-6 border-t">
           <form onSubmit={handleCommentSubmit} className="w-full space-y-4">
             <Textarea
-              placeholder="Add a comment or reply to the diligence team..."
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              disabled={isSubmitting}
+                placeholder="Add a comment or reply to the diligence team..."
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                disabled={isSubmitting}
               className="min-h-24 resize-none"
-            />
-            
-            {attachments.length > 0 && (
+              />
+              
+              {attachments.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {attachments.map((attachment) => (
+                  {attachments.map((attachment) => (
                   <Badge
-                    key={attachment.id}
+                      key={attachment.id}
                     variant="secondary"
                     className="gap-1.5 py-1 pl-3 h-7"
-                  >
-                    {getAttachmentIcon(attachment)}
+                    >
+                      {getAttachmentIcon(attachment)}
                     <span className="max-w-[150px] truncate">
-                      {attachment.name}
-                    </span>
+                        {attachment.name}
+                      </span>
                     <Button
-                      type="button"
+                        type="button"
                       variant="ghost"
                       size="icon"
                       className="h-5 w-5 rounded-full ml-1 hover:bg-gray-200"
-                      onClick={() => removeAttachment(attachment.id)}
-                    >
-                      <X className="h-3 w-3" />
+                        onClick={() => removeAttachment(attachment.id)}
+                      >
+                        <X className="h-3 w-3" />
                     </Button>
                   </Badge>
-                ))}
-              </div>
-            )}
-            
-            <div className="flex justify-between items-center">
-              <div className="relative">
-                <input
-                  id="file-upload"
-                  name="file-upload"
-                  type="file"
-                  className="sr-only"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] || null;
-                    if (file) {
-                      handleFileUpload(file);
-                    }
-                  }}
-                  disabled={isUploading || isSubmitting}
-                />
+                  ))}
+                </div>
+              )}
+              
+              <div className="flex justify-between items-center">
+                  <div className="relative">
+                    <input
+                      id="file-upload"
+                      name="file-upload"
+                      type="file"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        if (file) {
+                          handleFileUpload(file);
+                        }
+                      }}
+                      disabled={isUploading || isSubmitting}
+                    />
                 <Button
                   type="button"
                   variant="outline"
@@ -253,32 +253,32 @@ export default function CommentsSection({
                   asChild
                 >
                   <label htmlFor="file-upload">
-                    {isUploading ? (
-                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                    ) : (
-                      <Upload className="h-4 w-4 mr-1" />
-                    )}
-                    Attach File
-                  </label>
+                      {isUploading ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <Upload className="h-4 w-4 mr-1" />
+                      )}
+                      Attach File
+                    </label>
                 </Button>
-              </div>
-              
+                </div>
+                
               <Button
-                type="submit"
-                disabled={isSubmitting || commentText.trim() === ''}
+                  type="submit"
+                  disabled={isSubmitting || commentText.trim() === ''}
                 size="sm"
-              >
-                {isSubmitting ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                ) : (
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
                   <Send className="h-4 w-4 mr-2" />
-                )}
-                Send
+                  )}
+                  Send
               </Button>
-            </div>
-          </form>
+              </div>
+            </form>
         </CardFooter>
-      )}
+        )}
     </Card>
   );
 } 

@@ -82,7 +82,7 @@ export default function MultiStepForm({
 
   return (
     <StepContext.Provider value={contextValue}>
-      <div className="w-full max-w-6xl mx-auto">
+    <div className="w-full max-w-6xl mx-auto">
         {/* Step Progress Indicator */}
         <div className="mb-8 px-4">
           <div className="flex items-center justify-between mb-2">
@@ -101,52 +101,52 @@ export default function MultiStepForm({
           </div>
         </div>
 
-        {/* Steps Navigation */}
-        <nav aria-label="Progress" className="mb-10">
+      {/* Steps Navigation */}
+      <nav aria-label="Progress" className="mb-10">
           <ol className="flex items-center justify-between">
-            {steps.map((step, index) => {
-              const isCompleted = completedSteps[step.id];
-              const isCurrent = index === currentStepIndex;
-              const isClickable = isCompleted || isCurrent || (index === currentStepIndex + 1 && step.optional);
-              
-              return (
-                <li
-                  key={step.id}
+          {steps.map((step, index) => {
+            const isCompleted = completedSteps[step.id];
+            const isCurrent = index === currentStepIndex;
+            const isClickable = isCompleted || isCurrent || (index === currentStepIndex + 1 && step.optional);
+
+            return (
+              <li
+                key={step.id}
                   className={cn(
                     "flex flex-col items-center relative group",
                     isClickable ? "cursor-pointer" : "cursor-not-allowed opacity-70"
                   )}
-                  onClick={() => handleStepClick(index)}
-                >
+                onClick={() => handleStepClick(index)}
+              >
                   {/* Connecting line */}
-                  {index !== 0 && (
+                {index !== 0 && (
                     <div className="absolute top-4 -left-1/2 w-full h-0.5 bg-gray-200 -z-10">
-                      <div 
-                        className={cn(
+                    <div
+                      className={cn(
                           "h-0.5 transition-all duration-300",
                           isCompleted || isCurrent ? "bg-primary" : "bg-gray-200"
-                        )}
+                      )}
                         style={{
                           width: isCompleted ? "100%" : isCurrent ? "50%" : "0%"
                         }}
                       ></div>
-                    </div>
-                  )}
+                  </div>
+                )}
                   
                   {/* Step circle */}
-                  <div
-                    className={cn(
+                <div
+                  className={cn(
                       "z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 transition-all duration-200",
                       isCompleted 
                         ? "border-primary bg-primary text-white" 
                         : isCurrent 
                           ? "border-primary bg-white text-primary shadow-sm ring-2 ring-primary ring-offset-2" 
                           : "border-gray-300 bg-white text-gray-500"
-                    )}
-                  >
-                    {isCompleted ? (
+                  )}
+                >
+                  {isCompleted ? (
                       <Check className="h-5 w-5" />
-                    ) : (
+                  ) : (
                       <span className="text-sm font-semibold">{index + 1}</span>
                     )}
                   </div>
@@ -157,42 +157,42 @@ export default function MultiStepForm({
                       className={cn(
                         "text-sm font-medium",
                         isCurrent ? "text-primary" : 
-                        isCompleted ? "text-gray-900" : "text-gray-500"
-                      )}
-                    >
-                      {step.title}
-                    </span>
-                    {step.optional && (
-                      <span className="block text-xs text-gray-500">(Optional)</span>
+                      isCompleted ? "text-gray-900" : "text-gray-500"
                     )}
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-        </nav>
+                  >
+                    {step.title}
+                  </span>
+                  {step.optional && (
+                      <span className="block text-xs text-gray-500">(Optional)</span>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      </nav>
 
-        {/* Current Step Content */}
-        <div className="bg-white shadow-md rounded-xl p-8 mb-8 border border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8">{steps[currentStepIndex].title}</h2>
-          {steps[currentStepIndex].content}
-        </div>
+      {/* Current Step Content */}
+      <div className="bg-white shadow-md rounded-xl p-8 mb-8 border border-gray-100">
+        <h2 className="text-2xl font-bold text-gray-900 mb-8">{steps[currentStepIndex].title}</h2>
+        {steps[currentStepIndex].content}
+      </div>
 
-        {/* Navigation Buttons */}
-        <div className="flex justify-between mt-8">
-          <Button
-            type="button"
-            onClick={handlePrevious}
-            disabled={currentStepIndex === 0}
-            variant="outline"
-            className={cn(
+      {/* Navigation Buttons */}
+      <div className="flex justify-between mt-8">
+        <Button
+          type="button"
+          onClick={handlePrevious}
+          disabled={currentStepIndex === 0}
+          variant="outline"
+          className={cn(
               "px-6 flex items-center",
-              currentStepIndex === 0 && "opacity-50 cursor-not-allowed"
-            )}
-          >
+            currentStepIndex === 0 && "opacity-50 cursor-not-allowed"
+          )}
+        >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Previous
-          </Button>
+          Previous
+        </Button>
         </div>
       </div>
     </StepContext.Provider>

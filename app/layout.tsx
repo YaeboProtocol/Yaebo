@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { cn } from "@/lib/utils";
 import { ClientInit } from "@/components/ClientInit";
+import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
   title: "STD Protocol Interface",
@@ -24,6 +25,7 @@ export default function RootLayout({
           {children}
         </main>
         <Footer />
+        <Toaster />
       </body>
     </html>
   );

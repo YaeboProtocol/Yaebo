@@ -74,18 +74,18 @@ export default function DAOPage() {
             Back to Home
           </Link>
           
-          {isConnected ? (
+            {isConnected ? (
             <div className="flex items-center px-3 py-2 rounded-md text-sm bg-green-50 text-green-700 border border-green-200">
-              <Wallet className="h-4 w-4 mr-2" />
-              <span className="hidden md:inline mr-2">Connected:</span>
-              <span className="font-mono">{`${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 4)}`}</span>
-            </div>
-          ) : (
-            <Button onClick={handleConnect} variant="outline" size="sm" className="gap-2">
-              <Wallet className="h-4 w-4" />
-              Connect Wallet
-            </Button>
-          )}
+                <Wallet className="h-4 w-4 mr-2" />
+                <span className="hidden md:inline mr-2">Connected:</span>
+                <span className="font-mono">{`${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 4)}`}</span>
+              </div>
+            ) : (
+              <Button onClick={handleConnect} variant="outline" size="sm" className="gap-2">
+                <Wallet className="h-4 w-4" />
+                Connect Wallet
+              </Button>
+            )}
         </div>
 
         <div className="mb-8">
@@ -162,69 +162,69 @@ export default function DAOPage() {
           <CardHeader className="pb-3">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <CardTitle>Proposal Directory</CardTitle>
-              <Link href={isConnected ? "/dao/proposals/new" : "#"} onClick={e => !isConnected && e.preventDefault()}>
-                <Button 
-                  variant="default" 
-                  size="sm" 
+            <Link href={isConnected ? "/dao/proposals/new" : "#"} onClick={e => !isConnected && e.preventDefault()}>
+              <Button 
+                variant="default" 
+                size="sm" 
                   className="gap-2 w-full md:w-auto"
-                  disabled={!isConnected}
-                >
-                  <PlusCircle className="h-4 w-4" />
-                  New Proposal
-                </Button>
-              </Link>
-            </div>
+                disabled={!isConnected}
+              >
+                <PlusCircle className="h-4 w-4" />
+                New Proposal
+              </Button>
+            </Link>
+          </div>
             <CardDescription>Browse and vote on active investment proposals</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col md:flex-row gap-4 mb-6">
-              <div className="relative flex-grow">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  type="text"
-                  placeholder="Search proposals..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="relative flex-grow">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Search proposals..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
               <Tabs 
                 defaultValue="all" 
                 value={activeTab}
                 onValueChange={(value) => setActiveTab(value as typeof activeTab)} 
                 className="w-full md:w-auto"
               >
-                <TabsList className="grid grid-cols-4 md:w-[400px]">
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="voting">Voting</TabsTrigger>
+              <TabsList className="grid grid-cols-4 md:w-[400px]">
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="voting">Voting</TabsTrigger>
                   <TabsTrigger value="marketplace">Market</TabsTrigger>
-                  <TabsTrigger value="closed">Closed</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
+                <TabsTrigger value="closed">Closed</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
 
-            {filteredProposals.length === 0 ? (
+          {filteredProposals.length === 0 ? (
               <div className="text-center py-12 bg-gray-50 rounded-md border">
                 <Search className="h-10 w-10 text-gray-300 mx-auto mb-3" />
                 <p className="text-lg font-medium text-gray-800 mb-1">No proposals found</p>
                 <p className="text-gray-500 mb-4">No proposals match your current filters</p>
-                {searchQuery && (
-                  <Button
+              {searchQuery && (
+                <Button
                     variant="outline"
-                    onClick={() => setSearchQuery("")}
-                    className="mt-2"
-                  >
-                    Clear search
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredProposals.map((proposal) => (
+                  onClick={() => setSearchQuery("")}
+                  className="mt-2"
+                >
+                  Clear search
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProposals.map((proposal) => (
                   <ProposalCard key={proposal.id} proposal={proposal as any} />
-                ))}
-              </div>
-            )}
+              ))}
+            </div>
+          )}
           </CardContent>
         </Card>
       </div>

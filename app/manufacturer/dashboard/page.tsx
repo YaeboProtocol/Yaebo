@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense  } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Plus, ArrowLeft, Upload, FileUp, FilePlus, BarChart3, ClipboardCheck } from 'lucide-react';
 import Link from 'next/link';
@@ -15,7 +15,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 
-export default function ManufacturerDashboardPage() {
+export default function SuspenseWrapper() {
+  return <Suspense fallback={<div>Loading...</div>}><ManufacturerDashboardPage /></Suspense>;
+}
+
+
+function ManufacturerDashboardPage() {
   const searchParams = useSearchParams();
   const applicationId = searchParams.get('applicationId') || 'app-0';
   

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -73,9 +74,11 @@ export default function InvestorHomePage() {
     {
       title: "Learn",
       description: "Education and resources",
-      icon: <BookOpen className="h-8 w-8 text-amber-500" />,
-      color: "bg-amber-50",
-      href: "/investor/learn"
+      icon: <BookOpen className="h-8 w-8 text-amber-500/60" />,
+      color: "bg-amber-50/60",
+      href: "#",
+      disabled: true,
+      comingSoon: true
     }
   ];
 
@@ -120,10 +123,17 @@ export default function InvestorHomePage() {
           {navigationOptions.map((option) => (
             <Card 
               key={option.title} 
-              className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => router.push(option.href)}
+              className={`hover:shadow-md transition-shadow ${option.disabled ? 'opacity-80 cursor-not-allowed' : 'cursor-pointer'}`}
+              onClick={() => !option.disabled && router.push(option.href)}
             >
-              <CardContent className="p-6">
+              <CardContent className="p-6 relative">
+                {option.comingSoon && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/5 backdrop-blur-[1px] rounded-lg z-10">
+                    <Badge variant="secondary" className="bg-black/50 text-white border-none px-3 py-1.5">
+                      Coming Soon
+                    </Badge>
+                  </div>
+                )}
                 <div className={`${option.color} w-14 h-14 rounded-lg flex items-center justify-center mb-4`}>
                   {option.icon}
                 </div>

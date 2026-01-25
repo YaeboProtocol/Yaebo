@@ -41,7 +41,12 @@ export const createApplication = async (formData: ManufacturerApplicationFormVal
       ...formData.documents,
       additionalDocs: []
     },
-    investmentTerms: formData.investmentTerms,
+    investmentTerms: {
+      ...formData.investmentTerms,
+      lotPrice: 0,
+      totalLots: 0,
+      maxPerInvestor: 0
+    },
     status: 'Draft',
     comments: [],
     createdAt: new Date().toISOString(),
@@ -201,7 +206,10 @@ export const initMockData = () => {
       investorSharePercentage: 60,
       minPeriod: 12,
       expectedReturn: 15,
-      useOfFundsBreakdown: 'Equipment (40%), Operations (30%), R&D (20%), Marketing (10%)'
+      useOfFundsBreakdown: 'Equipment (40%), Operations (30%), R&D (20%), Marketing (10%)',
+      lotPrice: 0,
+      totalLots: 0,
+      maxPerInvestor: 0
     },
     status: 'Under Review',
     comments: [

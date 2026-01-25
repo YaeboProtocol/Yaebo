@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import { useStepCompletion } from './MultiStepForm';
 
 interface CompanyInfoFormProps {
   defaultValues?: Partial<CompanyInfoFormValues>;
@@ -14,6 +15,9 @@ interface CompanyInfoFormProps {
 }
 
 export default function CompanyInfoForm({ defaultValues, onSubmit }: CompanyInfoFormProps) {
+  // Get step completion from context
+  const { completeStep } = useStepCompletion();
+  
   const form = useForm<CompanyInfoFormValues>({
     resolver: zodResolver(companyInfoSchema),
     defaultValues: defaultValues || {
@@ -26,9 +30,17 @@ export default function CompanyInfoForm({ defaultValues, onSubmit }: CompanyInfo
 
   const isSubmitting = form.formState.isSubmitting;
 
+  const handleSubmit = async (data: CompanyInfoFormValues) => {
+    // Call the onSubmit function provided by the parent component
+    await onSubmit(data);
+    
+    // Move to the next step
+    completeStep();
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <Card>
           <CardContent className="pt-6">
             <div className="grid grid-cols-1 gap-6">

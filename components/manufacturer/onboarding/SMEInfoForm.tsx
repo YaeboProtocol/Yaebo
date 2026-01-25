@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import { useStepCompletion } from './MultiStepForm';
 
 interface SMEInfoFormProps {
   defaultValues?: Partial<SMEInfoFormValues>;
@@ -15,6 +16,9 @@ interface SMEInfoFormProps {
 }
 
 export default function SMEInfoForm({ defaultValues, onSubmit }: SMEInfoFormProps) {
+  // Get step completion from context
+  const { completeStep } = useStepCompletion();
+  
   const form = useForm<SMEInfoFormValues>({
     resolver: zodResolver(smeInfoSchema),
     defaultValues: defaultValues || {
@@ -28,9 +32,17 @@ export default function SMEInfoForm({ defaultValues, onSubmit }: SMEInfoFormProp
 
   const isSubmitting = form.formState.isSubmitting;
 
+  const handleSubmit = async (data: SMEInfoFormValues) => {
+    // Call the onSubmit function provided by the parent component
+    await onSubmit(data);
+    
+    // Move to the next step
+    completeStep();
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <Card>
           <CardContent className="pt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

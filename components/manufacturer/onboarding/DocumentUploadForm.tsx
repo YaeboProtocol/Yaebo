@@ -9,6 +9,7 @@ import { Loader2, Upload, File, XCircle, CheckCircle2, X } from "lucide-react";
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Input } from "@/components/ui/input";
+import { useStepCompletion } from './MultiStepForm';
 
 interface DocumentUploadFormProps {
   defaultValues?: Partial<DocumentUploadFormValues>;
@@ -23,6 +24,9 @@ export default function DocumentUploadForm({
   defaultValues,
   onSubmit,
 }: DocumentUploadFormProps) {
+  // Get step completion from context
+  const { completeStep } = useStepCompletion();
+  
   const [businessPlanFile, setBusinessPlanFile] = useState<FileWithPreview | null>(null);
   const [financialStatementsFile, setFinancialStatementsFile] = useState<FileWithPreview | null>(null);
   const [identificationDocsFile, setIdentificationDocsFile] = useState<FileWithPreview | null>(null);
@@ -113,6 +117,9 @@ export default function DocumentUploadForm({
         identificationDocs: identificationDocsFile,
       };
       await onSubmit(formData);
+      
+      // Move to the next step
+      completeStep();
     } catch (error) {
       console.error('Error uploading documents:', error);
     }

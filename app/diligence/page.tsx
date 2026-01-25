@@ -31,9 +31,9 @@ export default function DiligenceDashboardPage() {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">214</div>
+            <div className="text-2xl font-bold">1</div>
             <p className="text-xs text-muted-foreground">
-              +24% from last month
+              +100% from last month
             </p>
           </CardContent>
         </Card>
@@ -46,9 +46,9 @@ export default function DiligenceDashboardPage() {
             <ClipboardCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">17</div>
+            <div className="text-2xl font-bold">1</div>
             <p className="text-xs text-muted-foreground">
-              5 require urgent attention
+              1 require urgent attention
             </p>
           </CardContent>
         </Card>

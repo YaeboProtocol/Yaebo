@@ -162,3 +162,10 @@ export function getReturnColor(returnPercentage: number): string {
   if (returnPercentage < 0) return "text-red-600";
   return "text-gray-600";
 }
+
+export function getShortAddress(addr: string | undefined) {
+  if (!addr) return "";
+
+  const lastIndex = addr.length - 1;
+  return addr.substring(0, 4) + "..." + addr.substring(lastIndex - 3)
+}

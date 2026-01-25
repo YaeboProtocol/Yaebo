@@ -2,13 +2,21 @@
 
 import { useSearchParams } from 'next/navigation'
 import { selectUserRole } from './actions'
-import { useState, useTransition } from 'react'
+import { Suspense, useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Coins, Factory, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
-export default function SelectRolePage() {
+export default function SuspenseWrapper() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+     <SelectRolePage />
+    </Suspense>
+  )
+}
+
+ function SelectRolePage() {
   const searchParams = useSearchParams()
   const next = searchParams.get('next') ?? '/'
   const [isPending, startTransition] = useTransition()

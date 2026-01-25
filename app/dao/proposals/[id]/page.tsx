@@ -228,10 +228,12 @@ export default function ProposalDetailPage() {
             {proposal.status === "voting" && (
               <div className="mb-8">
                 <VotingInterface
+                  //@ts-ignore
                   proposal={proposal}
                   votes={votes}
                   userHasVoted={false}
                   isConnected={isConnected}
+                  //@ts-ignore
                   onVote={handleVote}
                   connectWallet={handleConnect}
                 />

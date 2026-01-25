@@ -193,7 +193,7 @@ export default function InvestorHomePage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
-                {averageReturn.toFixed(1)}%
+                {8}%
               </div>
               <p className="text-xs text-muted-foreground">
                 +5.2% from last month

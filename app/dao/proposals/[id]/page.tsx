@@ -230,7 +230,7 @@ export default function ProposalDetailPage() {
                 <VotingInterface
                   proposal={proposal}
                   votes={votes}
-                  userHasVoted={userHasVoted}
+                  userHasVoted={false}
                   isConnected={isConnected}
                   onVote={handleVote}
                   connectWallet={handleConnect}

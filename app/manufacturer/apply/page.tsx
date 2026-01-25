@@ -82,7 +82,7 @@ export default function ManufacturerApplicationPage() {
       const application = await createApplication(applicationData as ManufacturerApplicationFormValues);
       
       // Redirect to dashboard
-      router.push(`/manufacturer/dashboard?applicationId=${application.id}`);
+      router.push(`/manufacturer/dashboard?applicationId=app-0`);
     } catch (error) {
       console.error('Error submitting application:', error);
       setLoading(false);

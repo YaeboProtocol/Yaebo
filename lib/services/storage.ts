@@ -1,5 +1,4 @@
 import { createClient } from "@supabase/supabase-js";
-import { UTApi } from "uploadthing/server";
 import { toast } from "sonner";
 
 // Initialize Supabase client
@@ -9,8 +8,6 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Initialize uploadthing client (fallback)
-const utApi = new UTApi();
-
 // Define allowed file types and their extensions
 export const ALLOWED_FILE_TYPES = {
   "application/pdf": [".pdf"],

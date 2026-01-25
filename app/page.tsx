@@ -39,7 +39,7 @@ export default function Home() {
             </ul>
           </CardContent>
           <CardFooter className="pt-4">
-            <Link href="/manufacturer" className="w-full">
+            <Link href="/manufacturer/dashboard" className="w-full">
               <Button variant="outline" className="w-full">
                 Access Portal
               </Button>

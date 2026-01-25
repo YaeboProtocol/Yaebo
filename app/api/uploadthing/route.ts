@@ -2,10 +2,11 @@ import { createRouteHandler } from "uploadthing/next";
 import { UTApi } from "uploadthing/server";
 import { NextRequest, NextResponse } from "next/server";
 
-const utapi = new UTApi();
 
 // Create a file upload endpoint
 export async function POST(request: NextRequest) {
+  const utapi = new UTApi();
+
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File;
@@ -47,6 +48,8 @@ export async function POST(request: NextRequest) {
 
 // Delete file endpoint
 export async function DELETE(request: NextRequest) {
+  const utapi = new UTApi();
+
   try {
     const json = await request.json();
     const { fileKey } = json;

@@ -254,7 +254,7 @@ export default function InvestorHomePage() {
                       </div>
                     </div>
                     <Button 
-                      onClick={() => router.push(`/investor/opportunities/${opportunity.id}`)}
+                      onClick={() => router.push(`/investor/marketplace/${opportunity.id}`)}
                       variant="outline" 
                       size="sm"
                     >
@@ -289,7 +289,7 @@ export default function InvestorHomePage() {
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
               
-              <Button 
+              {/* <Button 
                 onClick={() => router.push("/investor/settings")}
                 className="w-full justify-between group"
                 variant="outline"
@@ -297,7 +297,7 @@ export default function InvestorHomePage() {
                 Account Settings
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
-              
+               */}
               <Button 
                 onClick={() => router.push("/dao")}
                 className="w-full justify-between group"

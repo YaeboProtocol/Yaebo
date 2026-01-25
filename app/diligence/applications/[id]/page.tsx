@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   ManufacturerApplication, 
@@ -10,8 +10,11 @@ import { getApplication } from "@/lib/mock-service";
 import { ApplicationDetail } from "@/components/diligence/ApplicationDetail";
 import { ProposalCreationForm } from "@/components/diligence/ProposalCreationForm";
 
-export default function ApplicationDetailPage({ params }: { params: { id: string } }) {
+export default function ApplicationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const { id } = React.use(params);
+  const applicationId = id;  // Keep direct access for now as migration path
+  console.log(applicationId);
   const [application, setApplication] = useState<ManufacturerApplication | null>(null);
   const [loading, setLoading] = useState(true);
   const [showProposalForm, setShowProposalForm] = useState(false);
@@ -20,7 +23,7 @@ export default function ApplicationDetailPage({ params }: { params: { id: string
     const loadApplication = async () => {
       setLoading(true);
       try {
-        const data = await getApplication(params.id);
+        const data = await getApplication(applicationId);
         setApplication(data);
       } catch (error) {
         console.error("Failed to load application:", error);
@@ -30,7 +33,7 @@ export default function ApplicationDetailPage({ params }: { params: { id: string
     };
 
     loadApplication();
-  }, [params.id]);
+  }, [applicationId]);
 
   if (loading) {
     return (

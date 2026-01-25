@@ -8,7 +8,6 @@ import {
 } from "@/types";
 import { getApplications } from "@/lib/mock-service";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -41,8 +40,11 @@ import {
   AlertCircle, 
   Clock, 
   RefreshCw, 
-  XCircle 
+  XCircle,
+  ArrowUpDown,
+  Calendar
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 const STATUS_BADGES: Record<ApplicationStatus, { label: string, color: string, icon: React.ReactNode }> = {
   "Draft": {
@@ -120,140 +122,179 @@ export function ApplicationDashboard() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-6">
-            <div className="relative w-full md:w-72">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search applications..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-              <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as ApplicationStatus | "All")}>
-                <SelectTrigger className="w-full md:w-40">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="All">All Statuses</SelectItem>
-                  <SelectItem value="Submitted">Submitted</SelectItem>
-                  <SelectItem value="Under Review">Under Review</SelectItem>
-                  <SelectItem value="Needs More Info">Needs More Info</SelectItem>
-                  <SelectItem value="Accepted">Accepted</SelectItem>
-                  <SelectItem value="Rejected">Rejected</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
-                <SelectTrigger className="w-full md:w-40">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">Newest First</SelectItem>
-                  <SelectItem value="oldest">Oldest First</SelectItem>
-                  <SelectItem value="companyName">Company Name</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+        <div className="relative w-full md:w-72">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search applications..."
+            className="pl-8"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as ApplicationStatus | "All")}>
+            <SelectTrigger className="w-full md:w-40">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">All Statuses</SelectItem>
+              <SelectItem value="Submitted">Submitted</SelectItem>
+              <SelectItem value="Under Review">Under Review</SelectItem>
+              <SelectItem value="Needs More Info">Needs More Info</SelectItem>
+              <SelectItem value="Accepted">Accepted</SelectItem>
+              <SelectItem value="Rejected">Rejected</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
+            <SelectTrigger className="w-full md:w-40">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">Newest First</SelectItem>
+              <SelectItem value="oldest">Oldest First</SelectItem>
+              <SelectItem value="companyName">Company Name</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : filteredApplications.length === 0 ? (
-            <div className="text-center py-10 text-muted-foreground">
-              <p>No applications found</p>
-              <p className="text-sm mt-1">Try adjusting your filters or search terms</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Company</TableHead>
-                    <TableHead>Submitted</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Lots</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredApplications.map((application) => {
-                    const status = STATUS_BADGES[application.status];
-                    return (
-                      <TableRow key={application.id}>
-                        <TableCell className="font-medium">
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : filteredApplications.length === 0 ? (
+        <div className="bg-background border rounded-lg p-12 text-center">
+          <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium mb-1">No applications found</h3>
+          <p className="text-sm text-muted-foreground">
+            Try adjusting your filters or search terms
+          </p>
+        </div>
+      ) : (
+        <div className="rounded-md border bg-background">
+          <div className="relative w-full overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="font-medium">
+                    <div className="flex items-center gap-1">
+                      Company
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-5 w-5"
+                        onClick={() => setSortBy("companyName")}
+                      >
+                        <ArrowUpDown className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </TableHead>
+                  <TableHead className="font-medium">
+                    <div className="flex items-center gap-1">
+                      Submitted
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-5 w-5"
+                        onClick={() => setSortBy(sortBy === "newest" ? "oldest" : "newest")}
+                      >
+                        <ArrowUpDown className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </TableHead>
+                  <TableHead className="font-medium">Status</TableHead>
+                  <TableHead className="font-medium">Funding Request</TableHead>
+                  <TableHead className="text-right font-medium">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredApplications.map((application) => {
+                  const status = STATUS_BADGES[application.status];
+                  return (
+                    <TableRow 
+                      key={application.id}
+                      className="hover:bg-muted/50 cursor-pointer"
+                      onClick={() => handleViewApplication(application.id)}
+                    >
+                      <TableCell>
+                        <div className="font-medium">
                           {application.companyInfo.name}
-                          <div className="text-sm text-muted-foreground">
-                            {application.smeInfo.jurisdiction}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {new Date(application.createdAt).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>
-                          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium w-fit ${status.color}`}>
-                            {status.icon}
-                            {status.label}
-                          </div>
-                        </TableCell>
-                        <TableCell>{application.investmentTerms.totalLots} lots</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => handleViewApplication(application.id)}
-                            >
-                              View
-                            </Button>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="ml-1">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => handleViewApplication(application.id)}>
-                                  View Details
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {application.smeInfo.jurisdiction}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span>
+                            {new Date(application.createdAt).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                            })}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={`${status.color} flex w-fit gap-1 items-center`}>
+                          {status.icon}
+                          {status.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">${application.investmentTerms.totalFundingAmount.toLocaleString()}</div>
+                        <div className="text-xs text-muted-foreground">{application.investmentTerms.minPeriod} months</div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewApplication(application.id);
+                              }}>
+                                View Details
+                              </DropdownMenuItem>
+                              {application.status !== "Under Review" && (
+                                <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                                  Mark as Under Review
                                 </DropdownMenuItem>
-                                {application.status !== "Under Review" && (
-                                  <DropdownMenuItem>
-                                    Mark as Under Review
-                                  </DropdownMenuItem>
-                                )}
-                                {application.status !== "Needs More Info" && (
-                                  <DropdownMenuItem>
-                                    Request More Info
-                                  </DropdownMenuItem>
-                                )}
-                                {application.status !== "Accepted" && (
-                                  <DropdownMenuItem>
-                                    Accept Application
-                                  </DropdownMenuItem>
-                                )}
-                                {application.status !== "Rejected" && (
-                                  <DropdownMenuItem>
-                                    Reject Application
-                                  </DropdownMenuItem>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                              )}
+                              {application.status !== "Needs More Info" && (
+                                <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                                  Request More Info
+                                </DropdownMenuItem>
+                              )}
+                              {application.status !== "Accepted" && (
+                                <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                                  Accept Application
+                                </DropdownMenuItem>
+                              )}
+                              {application.status !== "Rejected" && (
+                                <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
+                                  Reject Application
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

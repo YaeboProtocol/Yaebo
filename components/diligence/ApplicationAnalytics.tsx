@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ApplicationStatus } from "@/types";
-import { Clock, BarChart3, PieChart, TrendingUp, Users } from "lucide-react";
+import { Clock, BarChart3, PieChart, TrendingUp, Users, ArrowDown, ArrowUp } from "lucide-react";
 
 // Mock data for charts
 const statusData = [
@@ -152,155 +152,222 @@ const LineChart = ({ data, valueKey, nameKey }: { data: any[], valueKey: string,
 
 export function ApplicationAnalytics() {
   return (
-    <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium">Applications by Status</CardTitle>
-            <PieChart className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <CardDescription>
-            Current status distribution
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <DonutChart data={statusData} />
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            {statusData.map((status, index) => (
-              <div key={index} className="flex items-center gap-1">
-                <div className="h-3 w-3 rounded-full" style={{ backgroundColor: status.color }} />
-                <span className="text-xs">{status.name}: {status.value}</span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium">Average Approval Time</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <CardDescription>
-            Days to process applications
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-1 flex items-center justify-between">
-            <span className="text-sm font-medium">11.3 days</span>
-            <span className="text-xs text-green-500">↓ 18%</span>
-          </div>
-          <BarChart data={approvalTimeData} valueKey="days" nameKey="month" />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium">Funding Rate</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <CardDescription>
-            Percentage of approved applications funded
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-1 flex items-center justify-between">
-            <span className="text-sm font-medium">84.2%</span>
-            <span className="text-xs text-green-500">↑ 6%</span>
-          </div>
-          <LineChart data={fundingRateData} valueKey="rate" nameKey="month" />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium">Applications Processed</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <CardDescription>
-            Monthly application processing metrics
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-2xl font-bold">35</p>
-              <p className="text-xs text-muted-foreground">This month</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold">214</p>
-              <p className="text-xs text-muted-foreground">This year</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold">75%</p>
-              <p className="text-xs text-muted-foreground">Acceptance rate</p>
-            </div>
-          </div>
-          <div className="h-1 w-full bg-muted">
-            <div className="h-1 w-3/4 bg-primary" />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium">Investor Engagement</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <CardDescription>
-            Investor participation metrics
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">Avg. Investors per Lot</p>
-              <p className="text-xl font-bold">4.3</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">Utilization Rate</p>
-              <p className="text-xl font-bold">89%</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">Repeat Investors</p>
-              <p className="text-xl font-bold">68%</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">New Investors</p>
-              <p className="text-xl font-bold">23</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="space-y-6">
+      <h2 className="text-xl font-semibold mb-4">Analytics Dashboard</h2>
       
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium">Upcoming Reviews</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <CardDescription>
-            Applications due for review
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {["Today", "Tomorrow", "This Week"].map((timeframe, i) => (
-              <div key={i} className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-primary" />
-                  <span className="text-sm">{timeframe}</span>
+      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium">Applications by Status</CardTitle>
+              <PieChart className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <CardDescription>
+              Current status distribution
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DonutChart data={statusData} />
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {statusData.map((status, index) => (
+                <div key={index} className="flex items-center gap-1.5">
+                  <div className="h-3 w-3 rounded-full" style={{ backgroundColor: status.color }} />
+                  <span className="text-xs">{status.name}: {status.value}</span>
                 </div>
-                <span className="font-medium text-sm">{5 - i * 2}</span>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium">Average Approval Time</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <CardDescription>
+              Days to process applications
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-1 flex items-center justify-between">
+              <span className="text-sm font-medium">11.3 days</span>
+              <div className="flex items-center text-xs text-green-600">
+                <ArrowDown className="h-3 w-3 mr-0.5" />
+                <span>18% from last quarter</span>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </div>
+            <BarChart data={approvalTimeData} valueKey="days" nameKey="month" />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium">Funding Rate</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <CardDescription>
+              Percentage of approved applications funded
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-1 flex items-center justify-between">
+              <span className="text-sm font-medium">84.2%</span>
+              <div className="flex items-center text-xs text-green-600">
+                <ArrowUp className="h-3 w-3 mr-0.5" />
+                <span>6% from last quarter</span>
+              </div>
+            </div>
+            <LineChart data={fundingRateData} valueKey="rate" nameKey="month" />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium">Applications Processed</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <CardDescription>
+              Monthly application processing metrics
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="text-center">
+                <p className="text-2xl font-bold">35</p>
+                <p className="text-xs text-muted-foreground">This month</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold">214</p>
+                <p className="text-xs text-muted-foreground">This year</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold">75%</p>
+                <p className="text-xs text-muted-foreground">Acceptance rate</p>
+              </div>
+            </div>
+            <div className="h-1.5 w-full bg-muted overflow-hidden rounded-full">
+              <div className="h-1.5 w-3/4 bg-primary" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium">Top Jurisdictions</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <CardDescription>
+              Applications by jurisdiction
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 rounded-sm bg-blue-600" />
+                  <div>
+                    <div className="text-sm font-medium">Singapore</div>
+                    <div className="text-xs text-muted-foreground">45 applications</div>
+                  </div>
+                </div>
+                <div className="text-sm font-medium">28%</div>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 rounded-sm bg-purple-600" />
+                  <div>
+                    <div className="text-sm font-medium">UAE</div>
+                    <div className="text-xs text-muted-foreground">37 applications</div>
+                  </div>
+                </div>
+                <div className="text-sm font-medium">23%</div>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 rounded-sm bg-amber-500" />
+                  <div>
+                    <div className="text-sm font-medium">UK</div>
+                    <div className="text-xs text-muted-foreground">32 applications</div>
+                  </div>
+                </div>
+                <div className="text-sm font-medium">20%</div>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 rounded-sm bg-green-600" />
+                  <div>
+                    <div className="text-sm font-medium">US</div>
+                    <div className="text-xs text-muted-foreground">30 applications</div>
+                  </div>
+                </div>
+                <div className="text-sm font-medium">18%</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium">Funding by Industry</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <CardDescription>
+              Total funding by industry sector
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-sm">
+                  <span>Manufacturing</span>
+                  <span className="font-medium">$5.2M</span>
+                </div>
+                <div className="h-1.5 w-full bg-muted overflow-hidden rounded-full">
+                  <div className="h-1.5 w-[85%] bg-blue-600" />
+                </div>
+              </div>
+              
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-sm">
+                  <span>Agriculture</span>
+                  <span className="font-medium">$3.7M</span>
+                </div>
+                <div className="h-1.5 w-full bg-muted overflow-hidden rounded-full">
+                  <div className="h-1.5 w-[62%] bg-green-600" />
+                </div>
+              </div>
+              
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-sm">
+                  <span>Technology</span>
+                  <span className="font-medium">$2.4M</span>
+                </div>
+                <div className="h-1.5 w-full bg-muted overflow-hidden rounded-full">
+                  <div className="h-1.5 w-[40%] bg-purple-600" />
+                </div>
+              </div>
+              
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-sm">
+                  <span>Healthcare</span>
+                  <span className="font-medium">$1.8M</span>
+                </div>
+                <div className="h-1.5 w-full bg-muted overflow-hidden rounded-full">
+                  <div className="h-1.5 w-[30%] bg-amber-500" />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 } 

@@ -322,24 +322,20 @@ export function ApplicationDetail({ application, onStatusChange, onCreateProposa
                       <h3 className="text-sm font-medium text-muted-foreground">Investment Terms</h3>
                       <div className="mt-2 space-y-2">
                         <div>
-                          <div className="text-xs text-muted-foreground">Lot Price</div>
-                          <div className="font-medium">${application.investmentTerms.lotPrice.toLocaleString()}</div>
+                          <div className="text-xs text-muted-foreground">Funding Amount</div>
+                          <div className="font-medium">${application.investmentTerms.totalFundingAmount.toLocaleString()}</div>
                         </div>
                         <div>
-                          <div className="text-xs text-muted-foreground">Total Lots</div>
-                          <div className="font-medium">{application.investmentTerms.totalLots}</div>
+                          <div className="text-xs text-muted-foreground">Investor Share</div>
+                          <div className="font-medium">{application.investmentTerms.investorSharePercentage}%</div>
                         </div>
                         <div>
-                          <div className="text-xs text-muted-foreground">Maximum Per Investor</div>
-                          <div className="font-medium">{application.investmentTerms.maxPerInvestor} lots</div>
+                          <div className="text-xs text-muted-foreground">Expected Returns</div>
+                          <div className="font-medium">{application.investmentTerms.expectedReturn}%</div>
                         </div>
                         <div>
                           <div className="text-xs text-muted-foreground">Minimum Period</div>
                           <div className="font-medium">{application.investmentTerms.minPeriod} months</div>
-                        </div>
-                        <div>
-                          <div className="text-xs text-muted-foreground">Expected Return</div>
-                          <div className="font-medium">{application.investmentTerms.expectedReturn}%</div>
                         </div>
                       </div>
                     </div>

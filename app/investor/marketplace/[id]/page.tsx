@@ -1,7 +1,6 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { mockProposals } from "../../../../lib/mock-data";
 import { Button } from "../../../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../../components/ui/card";
 import { Separator } from "../../../../components/ui/separator";
@@ -15,6 +14,7 @@ import {
   Percent,
   TrendingUp,
   Users,
+  Loader2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { 
@@ -26,16 +26,80 @@ import {
 import { Progress } from "../../../../components/ui/progress";
 import { Badge } from "../../../../components/ui/badge";
 import InvestmentForm from "../../../../components/investor/InvestmentForm";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getProposalFromSupabase } from "../../../../lib/utils/daoProposals";
+import { toast } from "sonner";
 
 export default function MarketplaceDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
   const [updatedSoldLots, setUpdatedSoldLots] = useState<number | null>(null);
+  const [proposal, setProposal] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   
-  // Find the proposal by ID
-  const proposal = mockProposals.find(p => p.id === id);
+  // Fetch proposal from Supabase
+  useEffect(() => {
+    const fetchProposal = async () => {
+      try {
+        setLoading(true);
+        const proposalId = parseInt(id);
+        
+        if (isNaN(proposalId)) {
+          console.error("Invalid proposal ID:", id);
+          setLoading(false);
+          return;
+        }
+        
+        const fetchedProposal = await getProposalFromSupabase(proposalId);
+        
+        if (fetchedProposal) {
+          // Transform proposal to match UI expectations
+          const totalLots = Math.floor((fetchedProposal.lotSize * fetchedProposal.sharePrice * fetchedProposal.maxPerInvestor) / fetchedProposal.sharePrice);
+          
+          setProposal({
+            id: fetchedProposal.id,
+            proposalId: fetchedProposal.proposalId,
+            title: fetchedProposal.proposalSummary.substring(0, 50) + (fetchedProposal.proposalSummary.length > 50 ? '...' : ''),
+            summary: fetchedProposal.proposalSummary,
+            lotSize: fetchedProposal.lotSize,
+            lotPrice: fetchedProposal.sharePrice,
+            totalLots: totalLots || 100, // Default to 100 if calculation fails
+            soldLots: 0, // Not tracked in contract yet
+            maxPerInvestor: fetchedProposal.maxPerInvestor,
+            profitShare: 12, // Default value, not in contract
+            investmentPeriod: 12, // Default value, not in contract
+            expectedROI: 18, // Default value, not in contract
+            riskScore: 5, // Default value, not in contract
+            researchSummary: "This investment opportunity has been approved by the DAO and is now available for investment. The proposal has passed all voting requirements and due diligence checks.",
+            riskAssessment: "This investment has been vetted by DAO members and approved through the governance process. Standard investment risks apply.",
+            createdAt: fetchedProposal.createdAt,
+            votingEndsAt: fetchedProposal.votingEndsAt,
+            status: fetchedProposal.status,
+          });
+        } else {
+          console.error("Proposal not found:", proposalId);
+        }
+      } catch (error) {
+        console.error("Error fetching proposal:", error);
+        toast.error("Failed to load proposal");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchProposal();
+  }, [id]);
+  
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="container py-16 text-center">
+        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+        <p className="text-muted-foreground">Loading proposal...</p>
+      </div>
+    );
+  }
   
   // Handle 404
   if (!proposal) {
@@ -288,7 +352,16 @@ export default function MarketplaceDetailPage() {
         
         <div>
           <InvestmentForm 
-            proposal={proposal} 
+            proposal={{
+              id: proposal.id,
+              title: proposal.title,
+              lotSize: proposal.lotSize,
+              lotPrice: proposal.lotPrice,
+              totalLots: proposal.totalLots,
+              soldLots: effectiveSoldLots,
+              maxPerInvestor: proposal.maxPerInvestor,
+              profitShare: proposal.profitShare,
+            }}
             onInvestmentComplete={handleInvestmentComplete}
           />
         </div>

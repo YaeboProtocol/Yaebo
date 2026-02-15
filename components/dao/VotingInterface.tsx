@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui
 import { Button } from "../ui/button";
 import { Alert, AlertDescription } from "../ui/alert";
 import { CheckCircle2, Clock, AlertCircle, Coins, Users, PieChart, DollarSign, Package, Info, Check, Loader } from "lucide-react";
-import { formatRemainingTime } from "../../lib/utils";
+import { useCountdown } from "../../lib/hooks/useCountdown";
 import { Progress } from "../ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
 import { Separator } from "../ui/separator";
@@ -13,7 +13,6 @@ import { cn } from "@/lib/utils";
 import { Badge } from "../ui/badge";
 import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
 import { Label } from "../ui/label";
-import { useSorobanReact } from "@soroban-react/core";
 
 // Mock toast implementation if sonner isn't installed
 const toast = {
@@ -100,56 +99,31 @@ export default function VotingInterface({
   const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [transactionState, setTransactionState] = useState<'pending' | 'success' | 'error'>('pending');
   
-  // Get Soroban context for wallet integration
-  const sorobanContext = useSorobanReact();
-  const { address, activeConnector, setActiveConnectorAndConnect } = sorobanContext;
+  // Live countdown timer
+  const countdown = useCountdown(proposal?.votingEndsAt || null);
   
-  // For demo: override isConnected based on Soroban wallet connection
-  const walletConnected = !!address;
-  const effectiveConnected = isConnected || walletConnected;
+  // For demo: use isConnected prop (Mantle/Soroban removed)
+  const effectiveConnected = isConnected;
   
   // For demo: override userSelection with local state if user has voted
   const effectiveUserSelection = hasVoted ? selectedOption : userSelection;
-
-  // Attempt to connect wallet on mount
-  useEffect(() => {
-    if (!effectiveConnected && sorobanContext.connectors?.length > 0) {
-      connectFreighter();
-    }
-  }, []);
-  
-  // Connect Freighter wallet
-  const connectFreighter = async () => {
-    if (sorobanContext.connectors?.length > 0 && setActiveConnectorAndConnect) {
-      try {
-        await setActiveConnectorAndConnect(sorobanContext.connectors[0]);
-        return true;
-      } catch (err) {
-        console.error("Failed to connect wallet:", err);
-        return false;
-      }
-    }
-    return false;
-  };
 
   const votingEnded = new Date() > proposal.votingEndsAt;
   const totalVotes = options?.reduce((sum, option) => sum + option.voteCount, 0) || 0;
   
   const sortedOptions = options ? [...options].sort((a, b) => b.voteCount - a.voteCount) : [];
 
-  const mockTransactionProcess = async () => {
+  const processVoteTransaction = async () => {
     setShowTransactionModal(true);
     setTransactionState('pending');
-    
-    // Simulate transaction processing time
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // 90% chance of success for demo purposes
-    const success = Math.random() > 0.1;
-    
-    if (success) {
+    try {
+      // Delegate to the onVote callback, which may perform the real on-chain vote
+      if (!selectedOption) {
+        throw new Error("No option selected");
+      }
+      await onVote(selectedOption);
+
       setTransactionState('success');
-      // Display success toast
       if (typeof window !== 'undefined') {
         toast.success("Transaction successful", {
           description: "Your vote has been recorded on the blockchain."
@@ -158,12 +132,11 @@ export default function VotingInterface({
       await new Promise(resolve => setTimeout(resolve, 1500));
       setShowTransactionModal(false);
       return true;
-    } else {
+    } catch (e: any) {
       setTransactionState('error');
-      // Display error toast
       if (typeof window !== 'undefined') {
         toast.error("Transaction failed", {
-          description: "There was an error processing your transaction. Please try again."
+          description: e?.message || "There was an error processing your transaction. Please try again."
         });
       }
       await new Promise(resolve => setTimeout(resolve, 1500));
@@ -181,24 +154,18 @@ export default function VotingInterface({
       return;
     }
 
-    // Ensure wallet is connected
-    if (!address) {
-      const connected = await connectFreighter();
-      if (!connected) {
-        setError("Please connect your wallet to vote");
-        return;
-      }
+    // Ensure wallet is connected (Mantle/Soroban removed - using mock)
+    if (!effectiveConnected) {
+      setError("Please connect your wallet to vote");
+      return;
     }
 
     try {
       setSubmitting(true);
-      
-      // First process the mock transaction
-      await mockTransactionProcess();
-      
-      // Then call the onVote callback
-      await onVote(selectedOption);
-      
+
+      // Process transaction (includes calling onVote)
+      await processVoteTransaction();
+
       // Update local state to reflect vote
       setHasVoted(true);
       
@@ -233,18 +200,18 @@ export default function VotingInterface({
     }
   };
 
-  // Renders a single poll option with its investment parameters
-  const PoolOptionCard = ({ 
-    option, 
-    index, 
-    selected = false, 
-    showResults = false, 
+  // Renders a single poll option with its investment parameters (and explicit Yes/No label)
+  const PoolOptionCard = ({
+    option,
+    index,
+    selected = false,
+    showResults = false,
     onClick = undefined,
-    showCheckmark = false 
-  }: { 
-    option: PoolOption; 
-    index: number; 
-    selected?: boolean; 
+    showCheckmark = false,
+  }: {
+    option: PoolOption;
+    index: number;
+    selected?: boolean;
     showResults?: boolean;
     onClick?: () => void;
     showCheckmark?: boolean;
@@ -252,29 +219,56 @@ export default function VotingInterface({
     const totalValue = option.lotSize * option.sharePrice;
     const maxInvestment = option.maxPerInvestor * option.sharePrice;
     const isTopVoted = index === 0 && option.voteCount > 0;
-    
+
+    const lowerId = option.id.toLowerCase();
+    const isYes = lowerId === "yay" || lowerId === "yes";
+    const isNo = lowerId === "nay" || lowerId === "no";
+    const optionLabel = isYes
+      ? "Yes – approve this proposal"
+      : isNo
+      ? "No – reject this proposal"
+      : `Option ${index + 1}`;
+
     return (
-      <div 
+      <div
         className={cn(
           "relative border rounded-lg p-4 transition-all",
-          selected ? "border-primary ring-2 ring-primary/20" : "border-slate-200 hover:border-slate-300",
+          selected ? "border-primary ring-2 ring-primary/20" : "border-slate-200 brush hover:border-slate-300",
           showResults && isTopVoted ? "bg-blue-50" : "",
           onClick ? "cursor-pointer" : ""
         )}
         onClick={onClick}
       >
+        {showResults && isTopVoted && (
+          <Badge className="absolute -top-2 -left-2 bg-blue-500 text-white text-[11px]">
+            Leading
+          </Badge>
+        )}
+
         {showCheckmark && selected && (
           <div className="absolute -top-2 -right-2 bg-primary text-white rounded-full p-1">
             <Check className="h-4 w-4" />
           </div>
         )}
-        
-        {showResults && isTopVoted && (
-          <Badge className="absolute -top-2 -left-2 bg-blue-500">
-            Leading
-          </Badge>
-        )}
-        
+
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">
+              {isYes ? "YES" : isNo ? "NO" : `Option ${index + 1}`}
+            </Badge>
+            <span className="text-sm font-semibold">{optionLabel}</span>
+          </div>
+          {showResults && (
+            <div className="text-xs text-muted-foreground flex items-center gap-2">
+              <span className="flex items-center">
+                <CheckCircle2 className="h-3 w-3 text-emerald-500 mr-1" />
+                {option.voteCount} votes
+              </span>
+              <span className="text-xs font-medium">{option.percentage}%</span>
+            </div>
+          )}
+        </div>
+
         <div className="grid grid-cols-3 gap-3 mb-3">
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground mb-1 flex items-center">
@@ -471,7 +465,7 @@ export default function VotingInterface({
             
             <div className="mt-6 flex items-center justify-center p-3 bg-slate-50 rounded-lg border border-slate-200">
               <Clock className="mr-2 h-4 w-4 text-amber-500" />
-              <span className="font-medium">{formatRemainingTime(proposal.votingEndsAt)}</span>
+              <span className="font-medium">{countdown}</span>
               <span className="ml-2 text-sm text-muted-foreground">until voting ends</span>
             </div>
           </CardContent>
@@ -501,8 +495,8 @@ export default function VotingInterface({
                 To vote on the investment pool parameters, please connect your wallet first. 
                 Your vote power is determined by your token holdings.
               </p>
-              <Button onClick={connectFreighter} size="lg" className="px-8">
-                Connect Freighter Wallet
+              <Button onClick={connectWallet} size="lg" className="px-8">
+                Connect Wallet
               </Button>
             </div>
           </CardContent>
@@ -564,7 +558,7 @@ export default function VotingInterface({
             <div className="flex items-center justify-between">
               <div className="text-sm flex items-center p-2 px-3 bg-amber-50 rounded-full border border-amber-200">
                 <Clock className="mr-2 h-4 w-4 text-amber-500" />
-                <span className="font-medium">{formatRemainingTime(proposal.votingEndsAt)}</span>
+                <span className="font-medium">{countdown}</span>
               </div>
               <Button 
                 type="submit" 

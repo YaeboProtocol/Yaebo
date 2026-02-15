@@ -47,7 +47,7 @@ A platform for tokenizing high-margin manufacturing debt, enabling crypto invest
 ## Data Model (Supabase)
 
 ### Manufacturer Application
-- Company Info: name, Stellar pubkey, contact, website
+- Company Info: name, Mantle pubkey, contact, website
 - SME Info: name, reg #, jurisdiction, address, website
 - Docs: incorporation cert, tax cert, audited financials, business plan, KYC, use-of-proceeds, risk report (PDF/image)
 - Inspection: date, inspector name/license, geo, audit report, site photos

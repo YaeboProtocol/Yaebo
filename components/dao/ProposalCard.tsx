@@ -3,7 +3,8 @@
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { Progress } from "../ui/progress";
-import { formatCurrency, formatRemainingTime } from "../../lib/utils";
+import { formatCurrency } from "../../lib/utils";
+import { useCountdown } from "../../lib/hooks/useCountdown";
 import { Calendar, Clock, DollarSign, Wallet, TrendingUp, BarChart } from "lucide-react";
 import Link from "next/link";
 import { Button } from "../ui/button";
@@ -42,6 +43,9 @@ export default function ProposalCard({ proposal }: ProposalCardProps) {
     totalLots = 0,
     soldLots = 0,
   } = proposal;
+
+  // Use live countdown timer for voting proposals
+  const countdown = useCountdown(status === "voting" ? votingEndsAt : null);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -106,7 +110,7 @@ export default function ProposalCard({ proposal }: ProposalCardProps) {
           <div className="mt-auto">
             <div className="flex items-center gap-1 bg-blue-50 text-blue-800 px-2 py-1.5 rounded-md text-sm">
               <Clock className="h-4 w-4" />
-              <span>Voting ends: {formatRemainingTime(votingEndsAt)}</span>
+              <span>{countdown || "Voting closed"}</span>
             </div>
           </div>
         )}

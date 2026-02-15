@@ -1,22 +1,28 @@
 "use client";
+
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
 
 export default function LoginPage() {
   const supabase = createClient();
+
+  const handleGoogleSignIn = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+  };
+
   return (
-    <form>
-      <div
-        onClick={() => {
-          supabase.auth.signInWithOAuth({
-            provider: "google",
-          });
-        }}
-        className="mt-4 flex flex-col items-center"
-      >
-        <a
-          href="/api/auth/google"
-          className="flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-        >
+    <div className="flex flex-col items-center justify-center py-16 gap-4">
+      <h1 className="text-2xl font-semibold">Sign in</h1>
+      <p className="text-muted-foreground max-w-md text-center">
+        Sign in with Google to continue. Make sure you&apos;ve configured your Supabase
+        project and redirect URL.
+      </p>
+      <Button onClick={handleGoogleSignIn} className="flex items-center gap-2">
           <svg
             className="h-5 w-5"
             viewBox="0 0 24 24"
@@ -40,8 +46,7 @@ export default function LoginPage() {
             />
           </svg>
           Sign in with Google
-        </a>
+      </Button>
       </div>
-    </form>
   );
 }

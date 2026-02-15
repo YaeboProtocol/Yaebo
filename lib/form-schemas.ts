@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const companyInfoSchema = z.object({
   name: z.string().min(1, { message: "Company name is required" }),
-  stellarPubkey: z.string().min(1, { message: "Stellar public key is required" }),
+  MantlePubkey: z.string().min(1, { message: "Mantle public key is required" }),
   contact: z.string().email({ message: "Invalid email address" }),
   website: z.string().url({ message: "Invalid website URL" }).min(1, { message: "Website URL is required" }),
 });

@@ -32,12 +32,15 @@ export const formatRemainingTime = (endDate: Date): string => {
   
   const days = Math.floor(remainingMs / (1000 * 60 * 60 * 24))
   const hours = Math.floor((remainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+  const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60))
+  const seconds = Math.floor((remainingMs % (1000 * 60)) / 1000)
   
   if (days > 0) {
-    return `${days}d ${hours}h remaining`
+    return `${days}d ${hours}h ${minutes}m ${seconds}s remaining`
+  } else if (hours > 0) {
+    return `${hours}h ${minutes}m ${seconds}s remaining`
   } else {
-    const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60))
-    return `${hours}h ${minutes}m remaining`
+    return `${minutes}m ${seconds}s remaining`
   }
 }
 

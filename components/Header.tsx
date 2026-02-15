@@ -1,38 +1,63 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import ConnectWallet from '@/components/connect-wallet';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
-import { LogIn, LogOut, User as UserIcon, ChevronDown } from 'lucide-react';
+import { LogIn, User as UserIcon, ChevronDown } from 'lucide-react';
 
 const Header = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const previousUser = useRef<User | null | undefined>(undefined);
   const supabase = createClient();
+  const router = useRouter();
 
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
+    // Skip auth check if Supabase is not configured
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       setLoading(false);
+      return;
+    }
+
+    const getUser = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setUser(user);
+      } catch (error) {
+        console.warn('Auth check failed (expected when auth is disabled):', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     getUser();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
-      }
-    );
+    try {
+      const { data: authListener } = supabase.auth.onAuthStateChange(
+        (event, session) => {
+          setUser(session?.user ?? null);
+        }
+      );
 
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
+      return () => {
+        authListener?.subscription.unsubscribe();
+      };
+    } catch (error) {
+      console.warn('Auth listener setup failed (expected when auth is disabled):', error);
+    }
   }, []);
+
+  // Redirect to /manufacturer after a fresh login (but not on initial load for already-logged-in users)
+  useEffect(() => {
+    if (previousUser.current === null && user) {
+      router.push('/manufacturer');
+    }
+    previousUser.current = user;
+  }, [user, router]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -72,35 +97,36 @@ const Header = () => {
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
           </svg>
-          STD Protocol
+          TachyonX
         </Link>
         
         <div className="flex items-center">
-          <nav className="mr-6">
-            <ul className="flex gap-6">
-              <li>
-                <Link href="/manufacturer" className="hover:text-primary-foreground/80 transition-colors font-medium">
-                  Manufacturer
-                </Link>
-              </li>
-              <li>
-                <Link href="/diligence" className="hover:text-primary-foreground/80 transition-colors font-medium">
-                  Diligence
-                </Link>
-              </li>
-              <li>
-                <Link href="/dao" className="hover:text-primary-foreground/80 transition-colors font-medium">
-                  DAO
-                </Link>
-              </li>
-              <li>
-                <Link href="/investor" className="hover:text-primary-foreground/80 transition-colors font-medium">
-                  Investor
-                </Link>
-              </li>
-            </ul>
-          </nav>
-          
+          {user && (
+            <nav className="mr-6">
+              <ul className="flex gap-6">
+                <li>
+                  <Link href="/manufacturer" className="hover:text-primary-foreground/80 transition-colors font-medium">
+                    Manufacturer
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/diligence" className="hover:text-primary-foreground/80 transition-colors font-medium">
+                    Diligence
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/dao" className="hover:text-primary-foreground/80 transition-colors font-medium">
+                    DAO
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/investor" className="hover:text-primary-foreground/80 transition-colors font-medium">
+                    Investor
+                  </Link>
+                </li>
+              </ul>
+            </nav>
+          )}
           <div className="flex items-center gap-3">
             <div className="relative" ref={menuRef}>
               {!loading && (
@@ -128,13 +154,6 @@ const Header = () => {
                             {user.email || user.user_metadata?.name || 'User'}
                           </strong>
                         </div>
-                        <Link 
-                          href="/profile" 
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          onClick={() => setMenuOpen(false)}
-                        >
-                          Profile
-                        </Link>
                         <button
                           onClick={handleSignOut}
                           className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"

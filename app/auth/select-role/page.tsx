@@ -55,7 +55,7 @@ export default function SuspenseWrapper() {
       <Card className="w-full max-w-md mx-auto shadow-lg">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Select Your Role</CardTitle>
-          <CardDescription>Choose how you want to participate on the STD Protocol platform</CardDescription>
+          <CardDescription>Choose how you want to participate on the TachyonX platform</CardDescription>
         </CardHeader>
         
         <CardContent className="space-y-4 pt-4">

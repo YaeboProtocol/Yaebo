@@ -24,19 +24,14 @@ import {
   MinusCircle,
   PlusCircle,
 } from "lucide-react";
-import { formatCurrency, processMockInvestment } from "../../lib/utils";
+import { formatCurrency } from "../../lib/utils";
 import { Alert, AlertDescription } from "../ui/alert";
 import { useRouter } from "next/navigation";
-import ConnectWallet from "../connect-wallet";
-import * as StellarSdk from "@stellar/stellar-sdk";
-import { rpc as StellarRpc } from "@stellar/stellar-sdk";
-import {
-  isConnected,
-  setAllowed,
-  getPublicKey,
-  signTransaction,
-} from "@stellar/freighter-api";
-import { useSorobanReact } from "@soroban-react/core";
+import { buyLot, getCurrentAddress, connectWithMetamask, checkUSDCBalance } from "../../lib/utils/daoUtils";
+import { parseUnits } from "ethers";
+import { checkEtherlinkNetwork, switchToEtherlinkNetwork } from "../../lib/utils/network";
+import { toast } from "sonner";
+import { storeInvestment } from "../../lib/utils/investments";
 
 type FormData = z.infer<typeof purchaseFormSchema>;
 
@@ -84,8 +79,6 @@ export default function InvestmentForm({
     },
   });
 
-  const { address, server } = useSorobanReact();
-
   const lots = form.watch("lots");
   const totalAmount = lots * lotPrice;
   const estimatedReturn = (totalAmount * profitShare) / 100;
@@ -114,72 +107,85 @@ export default function InvestmentForm({
       setSubmitting(true);
       setError("");
 
-      // Process mock transaction
-      await handleSendPayment(
-        "GATIOBGJFQQO33JWUCJCY3TT4UBXPXUQL6Q4GGS6OFYBEPLANS5VDIIS",
-        "10"
-      );
-      const result = await processMockInvestment(id, data.lots, lotPrice);
-
-      if (result.success) {
-        setSuccess(true);
-        onInvestmentComplete(data.lots);
-        // Redirect to portfolio after 2 seconds
-        setTimeout(() => {
-          router.push("/investor/portfolio");
-        }, 2000);
-      } else {
-        setError("Transaction failed. Please try again.");
+      // Check wallet connection
+      let address = await getCurrentAddress();
+      if (!address) {
+        toast.info("Please connect your wallet");
+        await connectWithMetamask();
+        address = await getCurrentAddress();
+        if (!address) {
+          throw new Error("Wallet not connected");
+        }
       }
-    } catch (err) {
-      setError("An error occurred. Please try again.");
+
+      const isOnEtherlink = await checkEtherlinkNetwork();
+      if (!isOnEtherlink) {
+        toast.info("Please switch to Etherlink Shadownet network");
+        try {
+          await switchToEtherlinkNetwork();
+          toast.success("Switched to Etherlink Shadownet network");
+        } catch (e) {
+          throw new Error("Please switch to Etherlink Shadownet network in your wallet");
+        }
+      }
+
+      // Calculate total value in mUSDC (6 decimals)
+      // lotPrice is in USD, so we need to convert to mUSDC smallest unit (6 decimals)
+      const totalValue = parseUnits((data.lots * lotPrice).toString(), 6);
+      
+      // Check if user has enough mUSDC balance
+      const hasBalance = await checkUSDCBalance(totalValue);
+      if (!hasBalance) {
+        throw new Error("Insufficient mUSDC balance. Please ensure you have enough tokens.");
+      }
+      
+      toast.info("Submitting transaction...");
+
+      // Call buyLot function from smart contract (will handle approval automatically)
+      const tx = await buyLot(totalValue);
+      
+      toast.success("Transaction submitted! Waiting for confirmation...");
+
+      // Wait for transaction confirmation
+      const receipt = await tx.wait();
+      
+      toast.success("Investment completed successfully!");
+      
+      // Store investment in database
+      const proposalId = parseInt(id);
+      if (!isNaN(proposalId)) {
+        const totalAmount = data.lots * lotPrice;
+        const storeSuccess = await storeInvestment(
+          address,
+          proposalId,
+          data.lots,
+          lotPrice,
+          totalAmount,
+          receipt.hash
+        );
+        
+        if (!storeSuccess) {
+          console.warn("Failed to store investment in database, but transaction was successful");
+        }
+      }
+      
+      setSuccess(true);
+      onInvestmentComplete(data.lots);
+      
+      // Redirect to portfolio after 2 seconds
+      setTimeout(() => {
+        router.push("/investor/portfolio");
+      }, 2000);
+    } catch (err: any) {
+      console.error("Investment error:", err);
+      const errorMessage = err?.reason || err?.message || "An error occurred. Please try again.";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleSendPayment = async (destination: string, amount: string) => {
-    if (!address || !server) {
-      console.error("Wallet not connected");
-      return;
-    }
-
-    try {
-      const sourceAccount = await server.getAccount(address);
-      const transaction = new StellarSdk.TransactionBuilder(sourceAccount, {
-        fee: StellarSdk.BASE_FEE,
-        networkPassphrase: StellarSdk.Networks.TESTNET,
-      })
-        .addOperation(
-          StellarSdk.Operation.payment({
-            destination: destination,
-            asset: StellarSdk.Asset.native(),
-            amount: amount,
-          })
-        )
-        .setTimeout(30)
-        .build();
-
-      const signedTransaction = await signTransaction(transaction.toXDR(), {
-        networkPassphrase: StellarSdk.Networks.TESTNET,
-      });
-
-      //@ts-ignore
-      const transactionResult = await server.sendTransaction(
-        //@ts-ignore
-        StellarSdk.TransactionBuilder.fromXDR(
-          signedTransaction,
-          StellarSdk.Networks.TESTNET
-        )
-      );
-
-      console.log("Transaction successful:", transactionResult);
-      alert("Payment sent successfully!");
-    } catch (error) {
-      console.error("Error sending payment:", error);
-      alert("Error sending payment. Please check the console for details.");
-    }
-  };
 
   if (success) {
     return (
@@ -277,7 +283,6 @@ export default function InvestmentForm({
         </CardDescription>
       </CardHeader>
 
-      <ConnectWallet />
 
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <CardContent className="space-y-4">

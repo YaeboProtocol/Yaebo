@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getApplications, initMockData } from '@/lib/mock-service';
 import { 
   ArrowRight, 
   FileText, 
@@ -24,6 +23,7 @@ import {
   CardFooter 
 } from '@/components/ui/card';
 import { ManufacturerApplication } from '@/types';
+import { getApplications } from '@/lib/services/application-service-client';
 
 const StatusIcon = ({ status }: { status: string }) => {
   switch (status) {
@@ -53,7 +53,7 @@ export default function ManufacturerPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        initMockData(); // Initialize mock data
+        // Fetch real applications for the currently authenticated manufacturer from Supabase
         const apps = await getApplications();
         setApplications(apps);
       } catch (err) {
@@ -203,7 +203,7 @@ export default function ManufacturerPage() {
                         </span>
                       </div>
                       <Link
-                        href={`/manufacturer/dashboard?applicationId=${app.id}`}
+                        href="/manufacturer/dashboard"
                         className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200"
                       >
                         View Details
@@ -223,7 +223,7 @@ export default function ManufacturerPage() {
           </p>
           <div className="mt-4">
             <a
-              href="mailto:support@stdprotocol.com"
+              href="mailto:support@tachyonx.com"
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200"
             >
               Contact Support

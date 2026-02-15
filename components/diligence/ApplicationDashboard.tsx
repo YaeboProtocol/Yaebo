@@ -6,7 +6,8 @@ import {
   ManufacturerApplication, 
   ApplicationStatus 
 } from "@/types";
-import { getApplications } from "@/lib/mock-service";
+import { getAllApplications } from "@/lib/services/application-service-client";
+import { createSlug } from "@/lib/utils/slug";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,17 +25,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { 
   Search, 
   SlidersHorizontal, 
-  MoreHorizontal, 
   FileText, 
   CheckCircle2, 
   AlertCircle, 
@@ -91,7 +84,7 @@ export function ApplicationDashboard() {
     const loadApplications = async () => {
       setLoading(true);
       try {
-        const data = await getApplications();
+        const data = await getAllApplications();
         setApplications(data);
       } catch (error) {
         console.error("Failed to load applications:", error);
@@ -116,8 +109,9 @@ export function ApplicationDashboard() {
       return a.companyInfo.name.localeCompare(b.companyInfo.name);
     });
 
-  const handleViewApplication = (id: string) => {
-    router.push(`/diligence/applications/${id}`);
+  const handleViewApplication = (application: ManufacturerApplication) => {
+    const slug = createSlug(application.companyInfo.name);
+    router.push(`/diligence/applications/${slug}`);
   };
 
   return (
@@ -214,8 +208,7 @@ export function ApplicationDashboard() {
                     return (
                     <TableRow 
                       key={application.id}
-                      className="hover:bg-muted/50 cursor-pointer"
-                      onClick={() => handleViewApplication(application.id)}
+                      className="hover:bg-muted/50"
                     >
                       <TableCell>
                         <div className="font-medium">
@@ -230,9 +223,9 @@ export function ApplicationDashboard() {
                           <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                           <span>
                             {new Date(application.createdAt).toLocaleDateString('en-US', {
-                              year: 'numeric',
                               month: 'short',
                               day: 'numeric',
+                              year: 'numeric',
                             })}
                           </span>
                         </div>
@@ -249,42 +242,17 @@ export function ApplicationDashboard() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end">
-                            <DropdownMenu>
-                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem onClick={(e) => {
+                            <Button 
+                              variant="default" 
+                              size="sm"
+                              onClick={(e) => {
                                 e.stopPropagation();
-                                handleViewApplication(application.id);
-                              }}>
-                                  View Details
-                                </DropdownMenuItem>
-                                {application.status !== "Under Review" && (
-                                <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
-                                    Mark as Under Review
-                                  </DropdownMenuItem>
-                                )}
-                                {application.status !== "Needs More Info" && (
-                                <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
-                                    Request More Info
-                                  </DropdownMenuItem>
-                                )}
-                                {application.status !== "Accepted" && (
-                                <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
-                                    Accept Application
-                                  </DropdownMenuItem>
-                                )}
-                                {application.status !== "Rejected" && (
-                                <DropdownMenuItem onClick={(e) => e.stopPropagation()}>
-                                    Reject Application
-                                  </DropdownMenuItem>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                                handleViewApplication(application);
+                              }}
+                              className="cursor-pointer"
+                            >
+                              Take Actions
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>

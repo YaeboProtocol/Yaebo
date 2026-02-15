@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -19,15 +20,118 @@ import {
   CircleDollarSign,
   Home,
   LayoutDashboard,
-  Settings,
-  Bell,
-  BookOpen
+  BookOpen,
+  Copy,
+  CheckCircle2
 } from "lucide-react";
 import { mockInvestments, mockProposals } from "@/lib/mock-data";
 import { formatCurrency } from "@/lib/utils";
+import { connectWithMetamask, initializeProvider, getCurrentAddress } from "@/lib/utils/daoUtils";
+import { checkEtherlinkNetwork, switchToEtherlinkNetwork } from "@/lib/utils/network";
+import { toast } from "sonner";
 
 export default function InvestorHomePage() {
   const router = useRouter();
+  const [isConnected, setIsConnected] = useState(false);
+  const [walletAddress, setWalletAddress] = useState<string>("");
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Check wallet connection on mount
+  useEffect(() => {
+    const checkWallet = async () => {
+      try {
+        if (typeof window !== "undefined" && (window as any).ethereum) {
+          const accounts = await (window as any).ethereum.request({ method: "eth_accounts" });
+          if (accounts.length > 0) {
+            await initializeProvider();
+            const address = await getCurrentAddress();
+            if (address) {
+              setIsConnected(true);
+              setWalletAddress(address);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error checking wallet:", error);
+      }
+    };
+
+    checkWallet();
+
+    // Listen for account changes
+    const handleAccountsChanged = (accounts: string[]) => {
+      if (accounts.length === 0) {
+        setIsConnected(false);
+        setWalletAddress("");
+      } else if (accounts[0] !== walletAddress) {
+        setWalletAddress(accounts[0]);
+        setIsConnected(true);
+      }
+    };
+
+    if (typeof window !== "undefined" && (window as any).ethereum) {
+      (window as any).ethereum.on("accountsChanged", handleAccountsChanged);
+      return () => {
+        (window as any).ethereum?.removeListener("accountsChanged", handleAccountsChanged);
+      };
+    }
+  }, [walletAddress]);
+
+  const handleConnect = async () => {
+    try {
+      setIsConnecting(true);
+      
+      const isOnEtherlink = await checkEtherlinkNetwork();
+      if (!isOnEtherlink) {
+        toast.info("Please switch to Etherlink Shadownet network");
+        try {
+          await switchToEtherlinkNetwork();
+          toast.success("Switched to Etherlink Shadownet network");
+        } catch (switchError) {
+          toast.error("Please manually switch to Etherlink Shadownet network in MetaMask");
+          setIsConnecting(false);
+          return;
+        }
+      }
+
+      await connectWithMetamask();
+      const address = await getCurrentAddress();
+      
+      if (address) {
+        setIsConnected(true);
+        setWalletAddress(address);
+        toast.success("Wallet connected successfully");
+      } else {
+        toast.error("Failed to connect wallet");
+      }
+    } catch (error: any) {
+      console.error("Failed to connect wallet:", error);
+      toast.error(error.message || "Failed to connect wallet");
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleDisconnect = () => {
+    setIsConnected(false);
+    setWalletAddress("");
+    toast.info("Wallet disconnected");
+  };
+
+  const handleCopyAddress = async () => {
+    if (walletAddress) {
+      await navigator.clipboard.writeText(walletAddress);
+      setCopied(true);
+      toast.success("Address copied to clipboard");
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const formatAddress = (address: string) => {
+    if (!address) return "";
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
   
   // Get marketplace opportunities count (with status="marketplace")
   const marketplaceCount = mockProposals.filter(p => p.status === "marketplace").length;
@@ -95,26 +199,51 @@ export default function InvestorHomePage() {
           </Link>
           
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center">3</span>
-            </Button>
-            
-            <Button variant="ghost" size="icon" onClick={() => router.push("/investor/settings")}>
-              <Settings className="h-5 w-5" />
-            </Button>
-
-            <div className="flex items-center bg-green-50 text-green-700 px-3 py-2 rounded-md text-sm border border-green-100">
-              <Wallet className="h-4 w-4 mr-2" />
-              <span className="font-mono">0x71...3ab5</span>
-            </div>
+            {isConnected ? (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center bg-green-50 text-green-700 px-3 py-2 rounded-md text-sm border border-green-100">
+                  <Wallet className="h-4 w-4 mr-2" />
+                  <span className="font-mono">{formatAddress(walletAddress)}</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleCopyAddress}
+                  className="h-8 w-8"
+                  title="Copy address"
+                >
+                  {copied ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDisconnect}
+                  className="text-xs"
+                >
+                  Disconnect
+                </Button>
+              </div>
+            ) : (
+              <Button
+                onClick={handleConnect}
+                disabled={isConnecting}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              >
+                <Wallet className="h-4 w-4 mr-2" />
+                {isConnecting ? "Connecting..." : "Connect Wallet"}
+              </Button>
+            )}
           </div>
         </div>
         
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Investor Dashboard</h1>
           <p className="mt-2 text-gray-500">
-            Welcome to the STD Protocol investor portal
+            Welcome to the TachyonX investor portal
           </p>
         </div>
         

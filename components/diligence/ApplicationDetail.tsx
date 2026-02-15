@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ManufacturerApplication,
   ApplicationStatus,
@@ -11,7 +12,7 @@ import {
   addComment,
   updateApplication,
   addResearchPaper,
-} from "@/lib/mock-service";
+} from "@/lib/services/application-service-client";
 import {
   Card,
   CardContent,
@@ -57,131 +58,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
-import { useRegisteredContract } from "@soroban-react/contracts";
-import { nativeToScVal } from "@stellar/stellar-sdk";
-import {
-  BASE_FEE,
-  Contract,
-  Networks,
-  rpc as StellarRpc,
-  Transaction,
-  TransactionBuilder,
-  xdr,
-} from "@stellar/stellar-sdk";
 import React, { useEffect } from "react";
-import {
-  getPublicKey,
-  isConnected,
-  signTransaction,
-} from "@stellar/freighter-api";
-import { useSorobanReact } from "@soroban-react/core";
 
-const CONTRACT_ID = "CAUA5OCRFU7FGPTBBCO6QK2WZ7HHWSDFTUPQ5HOXZXRBEV2VDDOPJJOC";
-const NETWORK_PASSPHRASE = Networks.TESTNET;
-const SOROBAN_URL = "https://soroban-testnet.stellar.org:443";
-
-const handleIncrement = async (publicKey: string) => {
-  try {
-    const server = new StellarRpc.Server(SOROBAN_URL);
-    const account = await server.getAccount(publicKey);
-
-    const contract = new Contract(CONTRACT_ID);
-    // const instance = contract.getFootprint();
-
-    const tx = new TransactionBuilder(account, {
-      fee: BASE_FEE,
-      networkPassphrase: NETWORK_PASSPHRASE,
-    })
-      .addOperation(
-        contract.call(
-          "create_proposal",                                                                                   
-
-          nativeToScVal(
-            "GALEHJJOMYUJGHUE3WWECVKUKVS6IO5VI67FUQJNA4KCYUTVBOAQG5V2",
-            { type: "address" }
-          ),
-          nativeToScVal(
-            '{"name":"SME Example Ltd.","reg_num":"REG-987","jurisdiction":"Exampleland","address":"456 Oak Ave","website":"http://sme.example"}',
-            { type: "string" }
-          ),
-          nativeToScVal("https://papers.co/research123", { type: "string" }),
-          nativeToScVal(1000000, { type: "u128" }),
-          nativeToScVal(10000, { type: "u128" }),
-          nativeToScVal(100, { type: "u32" }),
-          nativeToScVal(5, { type: "u32" }),
-          nativeToScVal(90, { type: "u32" }),
-          nativeToScVal(15, { type: "u32" }),
-          nativeToScVal(25, { type: "u32" })
-        )
-      )
-      .setTimeout(30)
-      .build();
-
-    // const result = await contract.invoke({
-    //   method: "create_proposal",
-    //   args: [
-    //     nativeToScVal("GALEHJJOMYUJGHUE3WWECVKUKVS6IO5VI67FUQJNA4KCYUTVBOAQG5V2", { type: "address" }),
-    //       nativeToScVal(smeDetailsString, { type: "string"  }),
-    //       nativeToScVal("https://papers.co/research123", { type: "string" }),
-    //     nativeToScVal(BigInt(1000000), { type: "u128" }),
-    //     nativeToScVal(BigInt(10000), { type: "u128" }),
-    //     nativeToScVal(BigInt(100), { type: "u32" }),
-    //     nativeToScVal(BigInt(5), { type: "u32" }),
-    //     nativeToScVal(BigInt(90), { type: "u32" }),
-    //     nativeToScVal(BigInt(15), { type: "u32" }),
-    //     nativeToScVal(BigInt(25), { type: "u32" }),
-    //   ],
-    //   signAndSend: true,
-    // });
-
-    const preparedTx = await server.prepareTransaction(tx);
-
-    const signedXdr = await signTransaction(
-      preparedTx.toEnvelope().toXDR("base64"),
-      {
-        networkPassphrase: NETWORK_PASSPHRASE,
-      }
-    );
-
-    const signedTx = TransactionBuilder.fromXDR(
-      signedXdr,
-      NETWORK_PASSPHRASE
-    ) as Transaction;
-
-    const txResult = await server.sendTransaction(signedTx);
-
-    if (txResult.status !== "PENDING") {
-      throw new Error("Something went Wrong");
-    }
-    const hash = txResult.hash;
-    let getResponse = await server.getTransaction(hash);
-    // Poll `getTransaction` until the status is not "NOT_FOUND"
-
-    while (getResponse.status === "NOT_FOUND") {
-      console.log("Waiting for transaction confirmation...");
-      getResponse = await server.getTransaction(hash);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
-
-    if (getResponse.status === "SUCCESS") {
-      // Make sure the transaction's resultMetaXDR is not empty
-      if (!getResponse.resultMetaXdr) {
-        throw "Empty resultMetaXDR in getTransaction response";
-      }
-    } else {
-      throw `Transaction failed: ${getResponse.resultXdr}`;
-    }
-
-    // Extract the new count from the transaction result
-    const returnValue = getResponse.resultMetaXdr
-      .v3()
-      .sorobanMeta()
-      ?.returnValue();
-  } catch (error) {
-    console.error("Error incrementing counter:", error);
-    alert("Error incrementing counter. Please check the console for details.");
-  }
-};
+// Mantle/Soroban contract functionality removed
 
 const STATUS_BADGES: Record<
   ApplicationStatus,
@@ -242,6 +121,7 @@ export function ApplicationDetail({
   onStatusChange,
   onCreateProposal,
 }: ApplicationDetailProps) {
+  const router = useRouter();
   const [commentText, setCommentText] = useState("");
   const [statusChangeDialogOpen, setStatusChangeDialogOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] =
@@ -250,12 +130,9 @@ export function ApplicationDetail({
   const [researchPaper, setResearchPaper] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [acceptingApplication, setAcceptingApplication] = useState(false);
 
-  const contract = useRegisteredContract("std");
-
-  const sorobanContext = useSorobanReact();
-
-  const { address } = sorobanContext;
+  // Mantle/Soroban removed - contract functionality disabled
 
   const handleStatusChange = async () => {
     if (!selectedStatus) return;
@@ -274,80 +151,14 @@ export function ApplicationDetail({
         );
       }
 
-      // Upload research paper if provided for Accepted status
+      // Upload research paper if provided for Accepted status (non-blocking)
       if (selectedStatus === "Accepted" && researchPaper) {
-        await addResearchPaper(application.id, researchPaper);
-
-        // Attempt contract invocation but don't block status change if it fails
         try {
-          if (!contract) {
-            console.warn(
-              "Contract is not available - skipping proposal creation"
-            );
-          } else {
-            // Only try contract invocation if we have a contract
-            try {
-              const smeDetailsString = application.smeInfo;
-
-              // Local blob URLs can't be accessed by the contract
-              // In a production environment, we would upload the file to IPFS or similar
-              // and use a publicly accessible URL
-              let researchPaperUrl = "";
-              if (
-                application.research &&
-                application.research.researchPaper &&
-                application.research.researchPaper.url
-              ) {
-                researchPaperUrl = application.research.researchPaper.url;
-                console.log(
-                  "Note: Using blob URL which may not be accessible to contract:",
-                  researchPaperUrl
-                );
-              }
-
-              console.log(
-                "Attempting contract invocation (may fail in development)..."
-              );
-
-              console.log("Address:", address);
-
-              // await handleIncrement(address as string);
-
-              // const result = await contract.invoke({
-              //   method: "create_proposal",
-              //   args: [
-              //     nativeToScVal("GALEHJJOMYUJGHUE3WWECVKUKVS6IO5VI67FUQJNA4KCYUTVBOAQG5V2", { type: "address" }),
-              //       nativeToScVal(smeDetailsString, { type: "string"  }),
-              //       nativeToScVal("https://papers.co/research123", { type: "string" }),
-              //     nativeToScVal(BigInt(1000000), { type: "u128" }),
-              //     nativeToScVal(BigInt(10000), { type: "u128" }),
-              //     nativeToScVal(BigInt(100), { type: "u32" }),
-              //     nativeToScVal(BigInt(5), { type: "u32" }),
-              //     nativeToScVal(BigInt(90), { type: "u32" }),
-              //     nativeToScVal(BigInt(15), { type: "u32" }),
-              //     nativeToScVal(BigInt(25), { type: "u32" }),
-              //   ],
-              //   signAndSend: true,
-              // });
-
-              // console.log("Proposal created:", result);
-            } catch (innerError) {
-              console.error("Contract error:", innerError);
-              console.log(
-                "Status change successful but proposal creation failed. This may be due to:"
-              );
-              console.log(
-                "1. Using a local blob URL that the contract can't access"
-              );
-              console.log("2. Contract implementation issues");
-              console.log("3. Network configuration issues");
-              console.log(
-                "Status will be updated but no proposal will be created on-chain"
-              );
-            }
-          }
+          await addResearchPaper(application.id, researchPaper);
         } catch (error) {
-          console.error("Error during proposal creation attempt:", error);
+          // Don't fail the status update if research paper upload fails
+          console.error("Failed to upload research paper (non-critical):", error);
+          // You could show a toast notification here if desired
         }
       }
 
@@ -356,6 +167,11 @@ export function ApplicationDetail({
       setSelectedStatus(null);
       setStatusReason("");
       setResearchPaper(null);
+
+      // If status is Accepted, automatically redirect to proposal creation
+      if (selectedStatus === "Accepted") {
+        onCreateProposal();
+      }
     } catch (error) {
       console.error("Failed to update status:", error);
     } finally {
@@ -366,6 +182,38 @@ export function ApplicationDetail({
   const openStatusChangeDialog = (status: ApplicationStatus) => {
     setSelectedStatus(status);
     setStatusChangeDialogOpen(true);
+  };
+
+  // Handle accepting application directly without modal
+  const handleAcceptApplication = async () => {
+    if (application.status === "Accepted") {
+      // Already accepted, just route to proposal creation
+      onCreateProposal();
+      return;
+    }
+
+    setAcceptingApplication(true);
+    try {
+      // Update status to Accepted
+      await updateApplication(application.id, { status: "Accepted" });
+      
+      // Add a default comment
+      await addComment(
+        application.id,
+        "Application has been accepted.",
+        [],
+        "Diligence"
+      );
+
+      onStatusChange("Accepted");
+      
+      // Route directly to proposal creation
+      onCreateProposal();
+    } catch (error) {
+      console.error("Failed to accept application:", error);
+    } finally {
+      setAcceptingApplication(false);
+    }
   };
 
   const handleSubmitComment = async () => {
@@ -478,10 +326,10 @@ export function ApplicationDetail({
                         </div>
                         <div>
                           <div className="text-xs text-muted-foreground">
-                            Stellar Public Key
+                            Mantle Public Key
                           </div>
                           <div className="font-mono text-sm truncate">
-                            {application.companyInfo.stellarPubkey}
+                            {application.companyInfo.MantlePubkey}
                           </div>
                         </div>
                         <div>
@@ -798,71 +646,167 @@ export function ApplicationDetail({
         </Card>
 
         <div className="w-full md:w-1/3 space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Actions</CardTitle>
+          <Card className="border-2">
+            <CardHeader className="pb-4 border-b">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold cursor-pointer" onClick={() => setStatusChangeDialogOpen(true)}>Quick Actions</CardTitle>
+                <div className={`w-2 h-2 rounded-full ${
+                  application.status === "Under Review" ? "bg-purple-500 animate-pulse" :
+                  application.status === "Needs More Info" ? "bg-amber-500 animate-pulse" :
+                  application.status === "Accepted" ? "bg-green-500" :
+                  application.status === "Rejected" ? "bg-red-500" :
+                  "bg-blue-500"
+                }`} />
+              </div>
+              <CardDescription className="mt-2">
+                Change application status or request information
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Dialog
-                  open={statusChangeDialogOpen}
-                  onOpenChange={setStatusChangeDialogOpen}
-                >
-                  <div className="grid grid-cols-1 gap-2">
+            <CardContent className="pt-6">
+              <Dialog
+                open={statusChangeDialogOpen}
+                onOpenChange={setStatusChangeDialogOpen}
+              >
+                <div className="space-y-3">
+                  {/* Review Actions */}
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                      Review Status
+                    </h3>
+                    
                     <Button
-                      className="w-full"
-                      variant={
+                      className={`w-full h-auto py-4 px-4 justify-start ${
                         application.status === "Under Review"
-                          ? "default"
-                          : "outline"
-                      }
+                          ? "bg-purple-600 hover:bg-purple-700 text-white border-2 border-purple-700"
+                          : "bg-purple-50 hover:bg-purple-100 text-purple-700 border-2 border-purple-200"
+                      }`}
                       onClick={() => openStatusChangeDialog("Under Review")}
                     >
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Mark Under Review
+                      <div className="flex items-start gap-3 w-full">
+                        <div className={`p-2 rounded-lg ${
+                          application.status === "Under Review" ? "bg-purple-700" : "bg-purple-200"
+                        }`}>
+                          <RefreshCw className={`h-5 w-5 ${
+                            application.status === "Under Review" ? "text-white" : "text-purple-700"
+                          }`} />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <div className="font-semibold">Mark Under Review</div>
+                          <div className={`text-xs mt-0.5 ${
+                            application.status === "Under Review" ? "text-purple-100" : "text-purple-600"
+                          }`}>
+                            Start reviewing this application
+                          </div>
+                        </div>
+                        {application.status === "Under Review" && (
+                          <CheckCircle2 className="h-5 w-5 text-white flex-shrink-0" />
+                        )}
+                      </div>
                     </Button>
 
                     <Button
-                      className="w-full"
-                      variant={
+                      className={`w-full h-auto py-4 px-4 justify-start ${
                         application.status === "Needs More Info"
-                          ? "default"
-                          : "outline"
-                      }
+                          ? "bg-amber-600 hover:bg-amber-700 text-white border-2 border-amber-700"
+                          : "bg-amber-50 hover:bg-amber-100 text-amber-700 border-2 border-amber-200"
+                      }`}
                       onClick={() => openStatusChangeDialog("Needs More Info")}
                     >
-                      <AlertCircle className="mr-2 h-4 w-4" />
-                      Request More Info
-                    </Button>
-
-                    <Button
-                      className="w-full"
-                      variant={
-                        application.status === "Accepted"
-                          ? "default"
-                          : "outline"
-                      }
-                      onClick={() => openStatusChangeDialog("Accepted")}
-                    >
-                      <CheckCircle2 className="mr-2 h-4 w-4" />
-                      Accept Application
-                    </Button>
-
-                    <Button
-                      className="w-full"
-                      variant={
-                        application.status === "Rejected"
-                          ? "default"
-                          : "outline"
-                      }
-                      onClick={() => openStatusChangeDialog("Rejected")}
-                    >
-                      <XCircle className="mr-2 h-4 w-4" />
-                      Reject Application
+                      <div className="flex items-start gap-3 w-full">
+                        <div className={`p-2 rounded-lg ${
+                          application.status === "Needs More Info" ? "bg-amber-700" : "bg-amber-200"
+                        }`}>
+                          <AlertCircle className={`h-5 w-5 ${
+                            application.status === "Needs More Info" ? "text-white" : "text-amber-700"
+                          }`} />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <div className="font-semibold">Request More Info</div>
+                          <div className={`text-xs mt-0.5 ${
+                            application.status === "Needs More Info" ? "text-amber-100" : "text-amber-600"
+                          }`}>
+                            Ask manufacturer for additional details
+                          </div>
+                        </div>
+                        {application.status === "Needs More Info" && (
+                          <CheckCircle2 className="h-5 w-5 text-white flex-shrink-0" />
+                        )}
+                      </div>
                     </Button>
                   </div>
 
-                  <DialogContent className="sm:max-w-[425px]">
+                  {/* Decision Actions */}
+                  <div className="space-y-2 pt-4 border-t">
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                      Final Decision
+                    </h3>
+
+                    <Button
+                      className={`w-full h-auto py-4 px-4 justify-start ${
+                        application.status === "Accepted"
+                          ? "bg-green-600 hover:bg-green-700 text-white border-2 border-green-700"
+                          : "bg-green-50 hover:bg-green-100 text-green-700 border-2 border-green-200"
+                      }`}
+                      onClick={handleAcceptApplication}
+                      disabled={acceptingApplication}
+                    >
+                      <div className="flex items-start gap-3 w-full">
+                        <div className={`p-2 rounded-lg ${
+                          application.status === "Accepted" ? "bg-green-700" : "bg-green-200"
+                        }`}>
+                          <CheckCircle2 className={`h-5 w-5 ${
+                            application.status === "Accepted" ? "text-white" : "text-green-700"
+                          }`} />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <div className="font-semibold">
+                            {acceptingApplication ? "Accepting..." : "Accept Application"}
+                          </div>
+                          <div className={`text-xs mt-0.5 ${
+                            application.status === "Accepted" ? "text-green-100" : "text-green-600"
+                          }`}>
+                            Approve and proceed to proposal creation
+                          </div>
+                        </div>
+                        {application.status === "Accepted" && (
+                          <CheckCircle2 className="h-5 w-5 text-white flex-shrink-0" />
+                        )}
+                      </div>
+                    </Button>
+
+                    <Button
+                      className={`w-full h-auto py-4 px-4 justify-start ${
+                        application.status === "Rejected"
+                          ? "bg-red-600 hover:bg-red-700 text-white border-2 border-red-700"
+                          : "bg-red-50 hover:bg-red-100 text-red-700 border-2 border-red-200"
+                      }`}
+                      onClick={() => openStatusChangeDialog("Rejected")}
+                    >
+                      <div className="flex items-start gap-3 w-full">
+                        <div className={`p-2 rounded-lg ${
+                          application.status === "Rejected" ? "bg-red-700" : "bg-red-200"
+                        }`}>
+                          <XCircle className={`h-5 w-5 ${
+                            application.status === "Rejected" ? "text-white" : "text-red-700"
+                          }`} />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <div className="font-semibold">Reject Application</div>
+                          <div className={`text-xs mt-0.5 ${
+                            application.status === "Rejected" ? "text-red-100" : "text-red-600"
+                          }`}>
+                            Decline this application with reason
+                          </div>
+                        </div>
+                        {application.status === "Rejected" && (
+                          <CheckCircle2 className="h-5 w-5 text-white flex-shrink-0" />
+                        )}
+                      </div>
+                    </Button>
+                  </div>
+                </div>
+
+                <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
                       <DialogTitle>
                         {selectedStatus === "Under Review" &&
@@ -886,7 +830,7 @@ export function ApplicationDetail({
                     <div className="grid gap-4 py-4">
                       {selectedStatus === "Accepted" && (
                         <div className="grid gap-2">
-                          <Label htmlFor="researchPaper">Research Paper</Label>
+                          <Label htmlFor="researchPaper">Research Paper (Optional)</Label>
                           <div className="flex items-center gap-2">
                             <input
                               id="researchPaper"
@@ -976,8 +920,7 @@ export function ApplicationDetail({
                         disabled={
                           submitting ||
                           (selectedStatus !== "Under Review" &&
-                            !statusReason.trim()) ||
-                          (selectedStatus === "Accepted" && !researchPaper)
+                            !statusReason.trim())
                         }
                       >
                         {submitting ? (
@@ -992,17 +935,6 @@ export function ApplicationDetail({
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
-
-                {application.status === "Accepted" && (
-                  <Button
-                    className="w-full justify-start"
-                    onClick={onCreateProposal}
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    Create Proposal
-                  </Button>
-                )}
-              </div>
             </CardContent>
           </Card>
 

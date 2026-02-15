@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import { 
   Card, 
   CardContent, 
@@ -79,29 +80,11 @@ export default function PortfolioSummary({
         </CardContent>
       </Card>
       
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Total Returns
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center">
-            <TrendingUp className="h-5 w-5 text-primary mr-2" />
-            <div className="text-2xl font-bold flex items-center">
-              <span className={getReturnColor(returnPercentage)}>
-                {formatCurrency(totalReturn)}
-              </span>
-              <span className={`ml-2 text-sm ${getReturnColor(returnPercentage)}`}>
-                {formatPercentage(returnPercentage)}
-              </span>
-            </div>
-          </div>
-          <div className="mt-1 text-xs text-muted-foreground">
-            ROI: {formatPercentage(returnPercentage)}
-          </div>
-        </CardContent>
-      </Card>
+      <AnimatedReturnCard 
+        totalReturn={totalReturn}
+        returnPercentage={returnPercentage}
+        getReturnColor={getReturnColor}
+      />
       
       <Card className={totalClaimable > 0 ? "border-green-200 bg-green-50" : ""}>
         <CardHeader className="pb-2">
@@ -124,5 +107,120 @@ export default function PortfolioSummary({
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// Animated value component for smooth transitions
+function AnimatedValue({ 
+  value, 
+  formatFn, 
+  className, 
+  prefix = "" 
+}: { 
+  value: number; 
+  formatFn: (val: number) => string; 
+  className?: string;
+  prefix?: string;
+}) {
+  const [displayValue, setDisplayValue] = useState(value);
+  const animationRef = useRef<number | null>(null);
+  const previousValueRef = useRef(value);
+  
+  useEffect(() => {
+    // Only animate if value actually changed significantly
+    if (Math.abs(previousValueRef.current - value) < 0.01) {
+      return;
+    }
+    
+    // Cancel any existing animation
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
+    
+    const startValue = displayValue;
+    const endValue = value;
+    const duration = 500; // 500ms animation
+    const startTime = Date.now();
+    
+    const animate = () => {
+      const now = Date.now();
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Easing function for smooth animation
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      const currentValue = startValue + (endValue - startValue) * easeOut;
+      
+      setDisplayValue(currentValue);
+      
+      if (progress < 1) {
+        animationRef.current = requestAnimationFrame(animate);
+      } else {
+        setDisplayValue(endValue);
+        previousValueRef.current = endValue;
+        animationRef.current = null;
+      }
+    };
+    
+    animationRef.current = requestAnimationFrame(animate);
+    
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [value, displayValue]);
+  
+  return (
+    <span className={className} style={{ transition: 'color 0.3s ease' }}>
+      {prefix}{formatFn(displayValue)}
+    </span>
+  );
+}
+
+// Animated Return Card Component
+function AnimatedReturnCard({
+  totalReturn,
+  returnPercentage,
+  getReturnColor,
+}: {
+  totalReturn: number;
+  returnPercentage: number;
+  getReturnColor: (percentage: number) => string;
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">
+          Total Returns
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center">
+          <TrendingUp className="h-5 w-5 text-primary mr-2" />
+          <div className="text-2xl font-bold flex items-center">
+            <AnimatedValue 
+              value={totalReturn} 
+              formatFn={formatCurrency}
+              className={getReturnColor(returnPercentage)}
+            />
+            <AnimatedValue 
+              value={returnPercentage} 
+              formatFn={formatPercentage}
+              className={`ml-2 text-sm ${getReturnColor(returnPercentage)}`}
+              prefix="+"
+            />
+          </div>
+        </div>
+        <div className="mt-1 text-xs text-muted-foreground">
+          ROI: <AnimatedValue 
+            value={returnPercentage} 
+            formatFn={formatPercentage}
+            className={getReturnColor(returnPercentage)}
+            prefix="+"
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 } 

@@ -22,7 +22,7 @@ export default function CompanyInfoForm({ defaultValues, onSubmit }: CompanyInfo
     resolver: zodResolver(companyInfoSchema),
     defaultValues: defaultValues || {
       name: '',
-      stellarPubkey: '',
+      MantlePubkey: '',
       contact: '',
       website: '',
     },
@@ -60,15 +60,15 @@ export default function CompanyInfoForm({ defaultValues, onSubmit }: CompanyInfo
               
               <FormField
                 control={form.control}
-                name="stellarPubkey"
+                name="MantlePubkey"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Stellar Public Key</FormLabel>
+                    <FormLabel>Mantle Public Key</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. GBLTXIBT7QYF2JW7OZAY..." {...field} />
+                      <Input placeholder="e.g. 0xdjahdTXI7OZAY..." {...field} />
                     </FormControl>
                     <FormDescription>
-                      Your Stellar account public key where funds will be sent
+                      Your Mantle account public key where funds will be sent
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

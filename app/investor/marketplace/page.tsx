@@ -1,32 +1,83 @@
 "use client";
 
-import { useState } from "react";
-import { mockProposals } from "../../../lib/mock-data";
+import { useState, useEffect } from "react";
+import { getProposalsFromSupabase } from "../../../lib/utils/daoProposals";
+import { Proposal } from "../../../lib/utils/daoUtils";
 import InvestmentCard from "../../../components/investor/InvestmentCard";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Input } from "../../../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
-import { Filter, Search } from "lucide-react";
+import { Filter, Search, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function MarketplacePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [riskFilter, setRiskFilter] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Fetch proposals from Supabase
+  const fetchProposals = async () => {
+    try {
+      setLoading(true);
+      const allProposals = await getProposalsFromSupabase();
+      // Filter for marketplace proposals (executed proposals)
+      const marketplaceProposals = allProposals.filter(
+        (proposal) => proposal.status === "marketplace"
+      );
+      setProposals(marketplaceProposals);
+    } catch (error) {
+      console.error("Error fetching proposals:", error);
+      toast.error("Failed to load proposals");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProposals();
+    
+    // Refresh every 5 seconds to catch newly executed proposals
+    const interval = setInterval(() => {
+      fetchProposals();
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, []);
   
   // Filter marketplace proposals
-  const marketplaceProposals = mockProposals.filter(
-    (proposal) => proposal.status === "marketplace"
-  );
+  const marketplaceProposals = proposals;
+  
+  // Transform proposals to match InvestmentCard format
+  const transformedProposals = marketplaceProposals.map((proposal) => {
+    const totalFunding = proposal.lotSize * proposal.sharePrice * proposal.maxPerInvestor;
+    const totalLots = Math.floor(totalFunding / proposal.sharePrice);
+    
+    return {
+      id: proposal.id,
+      title: proposal.proposalSummary.substring(0, 50) + (proposal.proposalSummary.length > 50 ? '...' : ''),
+      summary: proposal.proposalSummary,
+      lotSize: proposal.lotSize,
+      lotPrice: proposal.sharePrice,
+      totalLots: totalLots,
+      soldLots: 0, // Not tracked yet, will be updated when investment tracking is implemented
+      profitShare: 0, // Not available in proposal, can be calculated or set default
+      investmentPeriod: 0, // Not available in proposal
+      expectedROI: 0, // Not available in proposal
+      riskScore: 5, // Default risk score, can be calculated based on proposal data
+    };
+  });
   
   // Apply search filter
   const filteredBySearch = searchQuery
-    ? marketplaceProposals.filter(
+    ? transformedProposals.filter(
         (proposal) =>
           proposal.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
           proposal.summary.toLowerCase().includes(searchQuery.toLowerCase())
       )
-    : marketplaceProposals;
+    : transformedProposals;
   
   // Apply risk filter
   const filteredByRisk = riskFilter === "all"
@@ -40,7 +91,9 @@ export default function MarketplacePage() {
   // Sort results
   const sortedProposals = [...filteredByRisk].sort((a, b) => {
     if (sortBy === "newest") {
-      return b.createdAt.getTime() - a.createdAt.getTime();
+      const aDate = marketplaceProposals.find(p => p.id === a.id)?.createdAt || new Date();
+      const bDate = marketplaceProposals.find(p => p.id === b.id)?.createdAt || new Date();
+      return bDate.getTime() - aDate.getTime();
     }
     if (sortBy === "highestReturn") {
       return b.expectedROI - a.expectedROI;
@@ -110,19 +163,28 @@ export default function MarketplacePage() {
         </div>
       </div>
       
-      {sortedProposals.length === 0 ? (
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-3 text-muted-foreground">Loading proposals...</span>
+        </div>
+      ) : sortedProposals.length === 0 ? (
         <div className="text-center py-12">
           <h2 className="text-xl font-semibold mb-2">No opportunities found</h2>
           <p className="text-muted-foreground mb-6">
-            Try adjusting your search criteria or check back later
+            {marketplaceProposals.length === 0 
+              ? "No executed proposals available yet. Check back after proposals are executed."
+              : "Try adjusting your search criteria or check back later"}
           </p>
-          <Button onClick={() => {
-            setSearchQuery("");
-            setRiskFilter("all");
-            setSortBy("newest");
-          }}>
-            Clear Filters
-          </Button>
+          {marketplaceProposals.length > 0 && (
+            <Button onClick={() => {
+              setSearchQuery("");
+              setRiskFilter("all");
+              setSortBy("newest");
+            }}>
+              Clear Filters
+            </Button>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

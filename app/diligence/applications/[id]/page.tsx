@@ -6,30 +6,23 @@ import {
   ManufacturerApplication, 
   ApplicationStatus 
 } from "@/types";
-import { getApplication } from "@/lib/mock-service";
+import { getApplication } from "@/lib/services/application-service-client";
 import { ApplicationDetail } from "@/components/diligence/ApplicationDetail";
 import { ProposalCreationForm } from "@/components/diligence/ProposalCreationForm";
-import { useSorobanReact } from "@soroban-react/core";
-import { useRegisteredContract } from "@soroban-react/contracts";
 
 export default function ApplicationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const { id } = React.use(params);
-  const applicationId = id;  // Keep direct access for now as migration path
-  console.log(applicationId);
+  const slugOrId = id; // Can be either slug (company-name) or UUID
   const [application, setApplication] = useState<ManufacturerApplication | null>(null);
   const [loading, setLoading] = useState(true);
   const [showProposalForm, setShowProposalForm] = useState(false);
-
-  const contract = useRegisteredContract("std");
-
-  console.log("contract in page component:", contract);
 
   useEffect(() => {
     const loadApplication = async () => {
       setLoading(true);
       try {
-        const data = await getApplication(applicationId);
+        const data = await getApplication(slugOrId);
         setApplication(data);
       } catch (error) {
         console.error("Failed to load application:", error);
@@ -39,7 +32,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
     };
 
     loadApplication();
-  }, [applicationId]);
+  }, [slugOrId]);
 
   if (loading) {
     return (
@@ -83,14 +76,6 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
             Application review
           </p>
         </div>
-        {application.status === "Accepted" && !showProposalForm && (
-          <button
-            onClick={() => setShowProposalForm(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-          >
-            Create Proposal
-          </button>
-        )}
       </div>
 
       {showProposalForm ? (

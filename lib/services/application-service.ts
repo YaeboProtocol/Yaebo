@@ -1,12 +1,12 @@
 import { createClient } from '@/lib/supabase/server';
-import { 
-  ManufacturerApplicationFormValues,
+import {
   ManufacturerApplication,
   ApplicationStatus,
   Document,
   Comment,
   DocumentUpload
 } from '@/types';
+import { ManufacturerApplicationFormValues } from '@/lib/form-schemas';
 import { uploadFile } from './storage';
 
 // Helper to convert database row to ManufacturerApplication
@@ -166,11 +166,18 @@ export async function createApplication(
       if (doc && doc instanceof File) {
         documentPromises.push(
           uploadApplicationDocument(application.id, doc, dbType)
+            .then(() => {})
+            .catch(err => {
+              console.warn(`Failed to upload document ${dbType}:`, err);
+            })
         );
       } else if (doc && typeof doc === 'object' && 'url' in doc) {
         // Document already uploaded, just create reference
         documentPromises.push(
           createDocumentReference(application.id, doc as Document, dbType)
+            .catch(err => {
+              console.warn(`Failed to create document reference ${dbType}:`, err);
+            })
         );
       }
     }
@@ -181,10 +188,17 @@ export async function createApplication(
         if (doc instanceof File) {
           documentPromises.push(
             uploadApplicationDocument(application.id, doc, 'additional')
+              .then(() => {})
+              .catch(err => {
+                console.warn('Failed to upload additional document:', err);
+              })
           );
         } else if (doc && typeof doc === 'object' && 'url' in doc) {
           documentPromises.push(
             createDocumentReference(application.id, doc as Document, 'additional')
+              .catch(err => {
+                console.warn('Failed to create additional document reference:', err);
+              })
           );
         }
       }
@@ -194,7 +208,11 @@ export async function createApplication(
   }
 
   // Fetch the complete application with documents
-  return getApplication(application.id);
+  const completeApplication = await getApplication(application.id);
+  if (!completeApplication) {
+    throw new Error('Failed to fetch created application');
+  }
+  return completeApplication;
 }
 
 // Upload a document for an application

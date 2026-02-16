@@ -40,6 +40,17 @@ export interface DocumentUpload {
   additionalDocs: Document[];
 }
 
+export interface DocumentUploadFormValues {
+  incorporationCert?: File | Document | null;
+  taxCert?: File | Document | null;
+  auditedFinancials?: File | Document | null;
+  businessPlan?: File | Document | null;
+  kyc?: File | Document | null;
+  useOfProceeds?: File | Document | null;
+  riskReport?: File | Document | null;
+  additionalDocs?: (File | Document)[];
+}
+
 export interface InspectionInfo {
   date: string;
   inspectorName: string;
@@ -63,9 +74,9 @@ export interface InvestmentTerms {
   minPeriod: number;
   expectedReturn: number;
   useOfFundsBreakdown: string;
-  lotPrice: number;
-  totalLots: number;
-  maxPerInvestor: number;
+  lotPrice?: number;
+  totalLots?: number;
+  maxPerInvestor?: number;
 }
 
 export interface Comment {

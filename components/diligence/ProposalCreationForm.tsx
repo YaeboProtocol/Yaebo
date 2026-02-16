@@ -22,9 +22,9 @@ interface ProposalCreationFormProps {
 export function ProposalCreationForm({ application, onCancel, onSuccess }: ProposalCreationFormProps) {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
-    lotSize: application.investmentTerms.lotPrice.toString(),
+    lotSize: application.investmentTerms.lotPrice?.toString() || "",
     sharePrice: "",
-    maxPerInvestor: application.investmentTerms.maxPerInvestor.toString(),
+    maxPerInvestor: application.investmentTerms.maxPerInvestor?.toString() || "",
     summary: ""
   });
   
@@ -233,9 +233,11 @@ export function ProposalCreationForm({ application, onCancel, onSuccess }: Propo
                     required
                   />
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Recommended to use existing lot price of ${application.investmentTerms.lotPrice.toLocaleString()}
-                </p>
+                {application.investmentTerms.lotPrice && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Recommended to use existing lot price of ${application.investmentTerms.lotPrice.toLocaleString()}
+                  </p>
+                )}
               </div>
               
               <div>
